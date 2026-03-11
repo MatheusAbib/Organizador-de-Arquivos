@@ -1,4 +1,4 @@
-        let todosArquivos = [];
+                let todosArquivos = [];
         let todasPastas = [];
         let compartilhados = [];
         let pastaAtual = null;
@@ -43,7 +43,6 @@
         
 
         function abrirSeletorArquivos() {
-            // Filtrar apenas arquivos que NÃO estão na pasta atual
             todosArquivosParaSeletor = todosArquivos.filter(a => a.pasta_id !== pastaModalAtual);
             
             arquivosSelecionados.clear();
@@ -57,7 +56,26 @@
         }
 
 
-        function renderizarSeletorArquivos(arquivos) {
+        let modalDropdownAberto = false;
+
+        function toggleModalDropdown() {
+            const dropdown = document.getElementById('modalDropdown');
+            modalDropdownAberto = !modalDropdownAberto;
+            dropdown.style.display = modalDropdownAberto ? 'block' : 'none';
+        }
+
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.pasta-actions-dropdown')) {
+                const dropdown = document.getElementById('modalDropdown');
+                if (dropdown) {
+                    dropdown.style.display = 'none';
+                    modalDropdownAberto = false;
+                }
+            }
+        });
+
+
+    function renderizarSeletorArquivos(arquivos) {
     const lista = document.getElementById('seletorArquivosLista');
     const termoBusca = document.getElementById('seletorBusca').value.toLowerCase();
     
@@ -222,12 +240,10 @@ function renderizarPastaItem(pasta, nivel) {
     const pastaCompartilhada = compartilhados.find(c => c.id === pasta.id);
     const permissao = pastaCompartilhada ? pastaCompartilhada.permissao : 'proprietario';
     
-    const podeEditar = permissao === 'proprietario' || permissao === 'editar';
-    const podeExcluir = permissao === 'proprietario';
-    const podeCompartilhar = permissao === 'proprietario';
+    const indentacao = nivel > 0 ? '　'.repeat(nivel) + '└─ ' : '';
     
     return `
-        <li class="pasta-item" style="margin-left: 0;">
+        <li class="pasta-item">
             ${temFilhos ? `
                 <span class="expand-icon" onclick="event.stopPropagation(); togglePasta(${pasta.id})">
                     ${estaExpandida ? '▼' : '▶'}
@@ -235,29 +251,33 @@ function renderizarPastaItem(pasta, nivel) {
             ` : '<span class="expand-icon" style="opacity: 0;">▶</span>'}
             
             <div class="pasta-nome" onclick="abrirModalPasta(${pasta.id})">
-                <span>${pastaCompartilhada ? '🔗' : '📁'} ${pasta.nome}</span>
-                ${pastaCompartilhada ? `<small style="color: #999; margin-left: 0.3rem;">(${permissao})</small>` : ''}
-            </div>
-            
-            <div class="pasta-actions" onclick="event.stopPropagation()">
-                <!-- NOVO BOTÃO DE DOWNLOAD AQUI -->
-                <button class="pasta-action-btn" onclick="downloadPasta(${pasta.id}, '${pasta.nome}')" title="Baixar pasta">📥</button>
-                
-                <button class="pasta-action-btn" onclick="criarSubPasta(${pasta.id})" title="Nova subpasta">➕</button>
-                ${podeCompartilhar ? `
-                    <button class="pasta-action-btn" onclick="abrirCompartilharModal(${pasta.id})" title="Compartilhar">🔗</button>
-                ` : ''}
-                ${podeEditar ? `
-                    <button class="pasta-action-btn" onclick="renomearPasta(${pasta.id})" title="Renomear">✏️</button>
-                ` : ''}
-                ${podeExcluir ? `
-                    <button class="pasta-action-btn" onclick="deletarPasta(${pasta.id})" title="Excluir">🗑️</button>
-                ` : ''}
+                <span title="${pasta.nome}">${indentacao}${pastaCompartilhada ? '🔗' : '📁'} ${pasta.nome}</span>
+                ${pastaCompartilhada ? `<small>(${permissao})</small>` : ''}
             </div>
         </li>
         ${temFilhos && estaExpandida ? renderizarSubPastas(pasta.id, nivel + 1) : ''}
     `;
 }
+let dropdownAtivo = null;
+
+function toggleDropdown(pastaId, event) {
+    event.stopPropagation();
+    
+    if (dropdownAtivo === pastaId) {
+        dropdownAtivo = null;
+    } else {
+        dropdownAtivo = pastaId;
+    }
+    
+    renderizarPastas();
+}
+
+document.addEventListener('click', function() {
+    if (dropdownAtivo) {
+        dropdownAtivo = null;
+        renderizarPastas();
+    }
+});
 
 function renderizarSubPastas(pastaPaiId, nivel) {
     const subPastas = todasPastas.filter(p => p.pasta_pai_id === pastaPaiId);
@@ -274,6 +294,21 @@ function togglePasta(pastaId) {
     }
     salvarEstadoPastas();
     renderizarPastas();
+}
+
+let todasPastasExpandidas = false;
+
+function toggleTodasPastas() {
+    if (todasPastasExpandidas) {
+        recolherTodasPastas();
+        document.getElementById('toggleIcon').textContent = '▼';
+        document.getElementById('toggleText').textContent = 'Expandir todas';
+    } else {
+        expandirTodasPastas();
+        document.getElementById('toggleIcon').textContent = '▲';
+        document.getElementById('toggleText').textContent = 'Recolher todas';
+    }
+    todasPastasExpandidas = !todasPastasExpandidas;
 }
 
 function expandirTodasPastas() {
@@ -369,7 +404,6 @@ async function abrirModalPasta(pastaId, isCompartilhado = false) {
 function renderizarConteudoPasta(subPastas, arquivos) {
     const body = document.getElementById('pastaModalBody');
     
-    // Verificar permissão da pasta atual
     const pastaCompartilhada = compartilhados.find(c => c.id === pastaModalAtual);
     const permissao = pastaCompartilhada ? pastaCompartilhada.permissao : 'proprietario';
     const podeEditar = permissao === 'proprietario' || permissao === 'editar';
@@ -381,7 +415,6 @@ function renderizarConteudoPasta(subPastas, arquivos) {
     
     let html = '<div class="pasta-content-grid">';
     
-    // Renderizar subpastas
     subPastas.forEach(pasta => {
         html += `
             <div class="pasta-content-item" onclick="abrirModalPasta(${pasta.id})">
@@ -400,7 +433,6 @@ function renderizarConteudoPasta(subPastas, arquivos) {
         `;
     });
     
-    // Renderizar arquivos
     arquivos.forEach(arquivo => {
         let icone = '📄';
         if (arquivo.tipo_arquivo === 'imagem') icone = '🖼️';
@@ -417,6 +449,11 @@ function renderizarConteudoPasta(subPastas, arquivos) {
                 <div class="nome">${arquivo.nome_original}</div>
                 <div class="tipo">${arquivo.tipo_arquivo} • ${tamanho}</div>
                 <div class="pasta-content-actions" onclick="event.stopPropagation()">
+                    <button class="favorito-btn ${arquivo.favorito ? 'active' : ''}" onclick="favoritarArquivo(${arquivo.id}, ${!arquivo.favorito})" title="${arquivo.favorito ? 'Desfavoritar' : 'Favoritar'}">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="${arquivo.favorito ? '#FFD700' : 'none'}" stroke="${arquivo.favorito ? '#FFD700' : 'currentColor'}" stroke-width="2">
+                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                        </svg>
+                    </button>
                     <button class="content-action-btn" onclick="abrirArquivo('${arquivo.nome_arquivo}', '${arquivo.tipo_arquivo}')" title="Abrir">🔍</button>
                     <button class="content-action-btn" onclick="baixarArquivo('${arquivo.nome_arquivo}')" title="Baixar">📥</button>
                     <button class="content-action-btn ${arquivo.comentario ? 'active' : ''}" onclick="event.stopPropagation(); abrirComentarioModal(${arquivo.id})" title="${arquivo.comentario ? 'Editar comentário' : 'Adicionar comentário'}">💬</button>
@@ -793,8 +830,11 @@ async function abrirCompartilharModal(pastaId) {
                 return `
                     <div class="arquivo-card ${tipo === 'imagem' ? 'com-imagem' : ''}">
                         <button class="delete-btn" onclick="deletarArquivo(${arquivo.id})">×</button>
-                        <button class="favorito-btn ${arquivo.favorito ? 'active' : ''}" onclick="favoritarArquivo(${arquivo.id}, ${!arquivo.favorito})">⭐</button>
-                        <button class="comentario-btn ${arquivo.comentario ? 'active' : ''}" onclick="event.stopPropagation(); abrirComentarioModal(${arquivo.id})" title="${arquivo.comentario ? 'Editar comentário' : 'Adicionar comentário'}">💬</button>
+<button class="favorito-btn ${arquivo.favorito ? 'active' : ''}" onclick="favoritarArquivo(${arquivo.id}, ${!arquivo.favorito})">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="${arquivo.favorito ? '#FFD700' : 'none'}" stroke="currentColor" stroke-width="2">
+        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+    </svg>
+</button>                        <button class="comentario-btn ${arquivo.comentario ? 'active' : ''}" onclick="event.stopPropagation(); abrirComentarioModal(${arquivo.id})" title="${arquivo.comentario ? 'Editar comentário' : 'Adicionar comentário'}">💬</button>
                         ${previewHtml || `<div class="arquivo-icone">${icone}</div>`}
                         <div class="arquivo-info">
                             ${nomeHtml}
@@ -863,8 +903,11 @@ async function abrirCompartilharModal(pastaId) {
                 return `
                     <div class="lista-item">
                         <button class="delete-btn" onclick="deletarArquivo(${arquivo.id})">×</button>
-                        <button class="favorito-btn ${arquivo.favorito ? 'active' : ''}" onclick="favoritarArquivo(${arquivo.id}, ${!arquivo.favorito})">⭐</button>
-                        <button class="comentario-btn ${arquivo.comentario ? 'active' : ''}" onclick="event.stopPropagation(); abrirComentarioModal(${arquivo.id})" title="${arquivo.comentario ? 'Editar comentário' : 'Adicionar comentário'}">💬</button>
+<button class="favorito-btn ${arquivo.favorito ? 'active' : ''}" onclick="favoritarArquivo(${arquivo.id}, ${!arquivo.favorito})">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="${arquivo.favorito ? '#FFD700' : 'none'}" stroke="currentColor" stroke-width="2">
+        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+    </svg>
+</button>                        <button class="comentario-btn ${arquivo.comentario ? 'active' : ''}" onclick="event.stopPropagation(); abrirComentarioModal(${arquivo.id})" title="${arquivo.comentario ? 'Editar comentário' : 'Adicionar comentário'}">💬</button>
                         ${previewHtml || `<div class="arquivo-icone">${icone}</div>`}
                         <div class="arquivo-info">
                             ${nomeHtml}
@@ -906,18 +949,29 @@ async function abrirCompartilharModal(pastaId) {
             }
         }
 
-        async function favoritarArquivo(id, favorito) {
-            try {
-                await fetch(`http://localhost:3000/api/arquivos/${id}/favoritar`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ favorito })
-                });
-                carregarArquivos();
-            } catch (error) {
-                console.error('Erro ao favoritar:', error);
+async function favoritarArquivo(id, favorito) {
+    try {
+        const response = await fetch(`http://localhost:3000/api/arquivos/${id}/favoritar`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ favorito })
+        });
+        
+        if (response.ok) {
+            if (favoritosModalAberto) {
+                await carregarFavoritos();
+            } else {
+                await carregarArquivos();
             }
+            
+            const favoritosResponse = await fetch(`http://localhost:3000/api/arquivos/favoritos/${usuario.id}`);
+            const favoritos = await favoritosResponse.json();
+            atualizarContadorFavoritos(favoritos.length);
         }
+    } catch (error) {
+        console.error('Erro ao favoritar:', error);
+    }
+}
 
          function abrirMoverModal(arquivoId) {
     arquivoParaMover = arquivoId;
@@ -1207,4 +1261,217 @@ async function downloadPasta(pastaId, pastaNome) {
     }
 }
 
+
+let favoritosModalAberto = false;
+
+async function mostrarFavoritos() {
+    favoritosModalAberto = true;
+    document.getElementById('favoritosModal').classList.add('active');
+    await carregarFavoritos();
+}
+
+function fecharFavoritosModal() {
+    document.getElementById('favoritosModal').classList.remove('active');
+    favoritosModalAberto = false;
+}
+
+async function carregarFavoritos() {
+    try {
+        const response = await fetch(`http://localhost:3000/api/arquivos/${usuario.id}`);
+        if (!response.ok) {
+            throw new Error('Erro ao carregar arquivos');
+        }
+        const arquivos = await response.json();
+        const favoritos = arquivos.filter(a => a.favorito === 1 || a.favorito === true);
+        renderizarFavoritos(favoritos);
+        atualizarContadorFavoritos(favoritos.length);
+    } catch (error) {
+        console.error('Erro ao carregar favoritos:', error);
+        document.getElementById('favoritosModalBody').innerHTML = '<div class="empty-state">Erro ao carregar favoritos</div>';
+    }
+}
+
+function renderizarFavoritos(favoritos) {
+    const container = document.getElementById('favoritosModalBody');
+    
+    if (favoritos.length === 0) {
+        container.innerHTML = '<div class="empty-state">Nenhum arquivo favoritado</div>';
+        return;
+    }
+    
+    let html = '<div class="arquivos-grid">';
+    
+    favoritos.forEach(arquivo => {
+        let icone = '📄';
+        if (arquivo.tipo_arquivo === 'imagem') icone = '🖼️';
+        else if (arquivo.tipo_arquivo === 'pdf') icone = '📕';
+        else if (arquivo.tipo_arquivo === 'word') icone = '📘';
+        else if (arquivo.tipo_arquivo === 'excel') icone = '📗';
+        else if (arquivo.tipo_arquivo === 'powerpoint') icone = '📙';
+        
+        const tamanho = (arquivo.tamanho / 1024).toFixed(2) + ' KB';
+        const data = new Date(arquivo.data_upload).toLocaleDateString('pt-BR');
+        const url = `http://localhost:3000/uploads/${arquivo.nome_arquivo}`;
+        
+        let previewHtml = '';
+        if (arquivo.tipo_arquivo === 'imagem') {
+            previewHtml = `<div class="imagem-preview" onclick="abrirArquivo('${arquivo.nome_arquivo}', '${arquivo.tipo_arquivo}')"><img src="${url}" alt="${arquivo.nome_original}"></div>`;
+        }
+        
+        html += `
+            <div class="arquivo-card ${arquivo.tipo_arquivo === 'imagem' ? 'com-imagem' : ''}">
+                <button class="delete-btn" onclick="deletarArquivo(${arquivo.id})">×</button>
+                <button class="favorito-btn active" onclick="favoritarArquivo(${arquivo.id}, false)">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="#FFD700" stroke="#FFD700" stroke-width="2">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                </button>                
+                <button class="comentario-btn ${arquivo.comentario ? 'active' : ''}" onclick="event.stopPropagation(); abrirComentarioModal(${arquivo.id})" title="${arquivo.comentario ? 'Editar comentário' : 'Adicionar comentário'}">💬</button>
+                ${previewHtml || `<div class="arquivo-icone">${icone}</div>`}
+                <div class="arquivo-info">
+                    <h3>${arquivo.nome_original}</h3>
+                    <span class="arquivo-tipo tipo-${arquivo.tipo_arquivo}">${arquivo.tipo_arquivo}</span>
+                    <div class="arquivo-meta">
+                        <span>${tamanho}</span>
+                        <span>${data}</span>
+                    </div>
+                </div>
+                <div class="arquivo-acoes">
+                    <button class="btn-abrir" onclick="abrirArquivo('${arquivo.nome_arquivo}', '${arquivo.tipo_arquivo}')">Abrir</button>
+                    <button class="btn-baixar" onclick="baixarArquivo('${arquivo.nome_arquivo}')">Baixar</button>
+                    <button class="btn-mover" onclick="abrirMoverModal(${arquivo.id})">Mover</button>
+                </div>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+function atualizarContadorFavoritos(count) {
+    const contador = document.getElementById('favoritosCount');
+    if (contador) {
+        contador.textContent = count;
+    }
+}
+
+async function favoritarArquivo(id, favorito) {
+    try {
+        const response = await fetch(`http://localhost:3000/api/arquivos/${id}/favoritar`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ favorito: favorito ? 1 : 0 })
+        });
+        
+        if (response.ok) {
+            if (pastaModalAtual) {
+                await abrirModalPasta(pastaModalAtual);
+            }
+            
+            if (favoritosModalAberto) {
+                await carregarFavoritos();
+            } else {
+                await carregarArquivos();
+            }
+            
+            const arquivosResponse = await fetch(`http://localhost:3000/api/arquivos/${usuario.id}`);
+            const todosArquivos = await arquivosResponse.json();
+            const favoritosCount = todosArquivos.filter(a => a.favorito === 1 || a.favorito === true).length;
+            atualizarContadorFavoritos(favoritosCount);
+        }
+    } catch (error) {
+        console.error('Erro ao favoritar:', error);
+    }
+}
+
+
+let userMenuAberto = false;
+let perfilEditando = false;
+
+function toggleUserMenu() {
+    const menu = document.getElementById('userMenu');
+    userMenuAberto = !userMenuAberto;
+    menu.style.display = userMenuAberto ? 'block' : 'none';
+}
+
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.user-info')) {
+        const menu = document.getElementById('userMenu');
+        if (menu) {
+            menu.style.display = 'none';
+            userMenuAberto = false;
+        }
+    }
+});
+
+function abrirModalUsuario() {
+    document.getElementById('usuarioModal').classList.add('active');
+    document.getElementById('perfilVisualizacao').style.display = 'block';
+    document.getElementById('perfilEdicao').style.display = 'none';
+    document.getElementById('perfilNome').textContent = usuario.nome;
+    document.getElementById('perfilEmail').textContent = usuario.email;
+    document.getElementById('editNome').value = usuario.nome;
+    document.getElementById('editEmail').value = usuario.email;
+    document.getElementById('editSenha').value = '';
+    userMenuAberto = false;
+    document.getElementById('userMenu').style.display = 'none';
+}
+
+function fecharModalUsuario() {
+    document.getElementById('usuarioModal').classList.remove('active');
+    perfilEditando = false;
+}
+
+function editarPerfil() {
+    document.getElementById('perfilVisualizacao').style.display = 'none';
+    document.getElementById('perfilEdicao').style.display = 'block';
+    perfilEditando = true;
+}
+
+function cancelarEdicaoPerfil() {
+    document.getElementById('perfilVisualizacao').style.display = 'block';
+    document.getElementById('perfilEdicao').style.display = 'none';
+    perfilEditando = false;
+}
+
+async function salvarPerfil() {
+    const novoNome = document.getElementById('editNome').value;
+    const novoEmail = document.getElementById('editEmail').value;
+    const novaSenha = document.getElementById('editSenha').value;
+    
+    if (!novoNome || !novoEmail) {
+        alert('Nome e email são obrigatórios');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`http://localhost:3000/api/usuarios/${usuario.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                nome: novoNome,
+                email: novoEmail,
+                senha: novaSenha || undefined
+            })
+        });
+        
+        if (response.ok) {
+            usuario.nome = novoNome;
+            usuario.email = novoEmail;
+            localStorage.setItem('usuario', JSON.stringify(usuario));
+            document.getElementById('userName').textContent = novoNome;
+            document.getElementById('perfilNome').textContent = novoNome;
+            document.getElementById('perfilEmail').textContent = novoEmail;
+            cancelarEdicaoPerfil();
+            mostrarNotificacao('✅ Perfil atualizado com sucesso');
+        } else {
+            const data = await response.json();
+            alert(data.error || 'Erro ao atualizar perfil');
+        }
+    } catch (error) {
+        console.error('Erro ao salvar perfil:', error);
+        alert('Erro ao salvar perfil');
+    }
+}
         carregarDados();
