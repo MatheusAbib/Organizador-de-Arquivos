@@ -3,52 +3,193 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Organizador de Arquivos</title>
+    <title>Organizador de Arquivos · Login</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        :root {
+            --bg-body: #fcf9f4;
+            --text-primary: #2c2c2c;
+            --text-secondary: #4a3f35;
+            --text-muted: #999;
+            --border-color: #eae5dd;
+            --card-bg: #ffffff;
+            --input-bg: #ffffff;
+            --icon-color: #b88b4a;
+            --btn-primary-bg: #b88b4a;
+            --btn-primary-hover: #9e6f36;
+            --shadow-color: rgba(0,0,0,0.03);
+            --hover-bg: #f5ede2;
+            --active-bg: #eae0d2;
+            --footer-bg: #2c2c2c;
+            --footer-text: #ffffff;
+            --footer-text-secondary: #a0a8c0;
+        }
+
+        body.dark-mode {
+            --bg-body: #0a0c10;
+            --text-primary: #e5e9f0;
+            --text-secondary: #e5e9f0;
+            --text-muted: #8b949e;
+            --border-color: #2d333b;
+            --card-bg: #14181f;
+            --input-bg: #0a0c10;
+            --icon-color: #d4a15e;
+            --btn-primary-bg: #d4a15e;
+            --btn-primary-hover: #b88b4a;
+            --shadow-color: rgba(0,0,0,0.5);
+            --hover-bg: #2d333b;
+            --active-bg: #373e4a;
+            --footer-bg: #0a0c10;
+            --footer-text: #e5e9f0;
+            --footer-text-secondary: #8b949e;
         }
 
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--bg-body);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: background-color 0.3s ease;
+            color: var(--text-primary);
+        }
+
+        h1, h2, h3, .serif-text {
+            font-family: source-serif-pro, Georgia, Cambria, "Times New Roman", Times, serif;
+        }
+
+        .navbar {
+            background: var(--card-bg);
+            padding: 1rem 5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 20px var(--shadow-color);
+            border-bottom: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .navbar h1 {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            letter-spacing: -0.3px;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .navbar h1 i {
+            color: var(--icon-color);
+            font-size: 1.6rem;
+        }
+
+        .tema-btn {
+            background: var(--bg-body);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+            padding: 0.5rem 1.2rem;
+            border-radius: 40px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .tema-btn:hover {
+            transform: translateY(-1px);
+            border-color: var(--icon-color);
+            background: var(--hover-bg);
+        }
+
+        .tema-btn i {
+            color: var(--icon-color);
+            font-size: 1rem;
+        }
+
+        .main-container {
+            flex: 1;
             display: flex;
             justify-content: center;
             align-items: center;
+            padding: 2rem;
+            margin: 2rem auto;
+            max-width: 1400px;
+            width: 100%;
         }
 
-        .container {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            width: 90%;
-            max-width: 500px;
-            padding: 40px;
+        .auth-card {
+            background: var(--card-bg);
+            border-radius: 32px;
+            box-shadow: 0 20px 60px var(--shadow-color);
+            width: 100%;
+            max-width: 40%;
+            padding: 2.5rem;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .auth-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .auth-header i {
+            font-size: 3.5rem;
+            color: var(--icon-color);
+            margin-bottom: 1rem;
+            background: var(--hover-bg);
+            padding: 1rem;
+            border-radius: 50%;
+        }
+
+        .auth-header h2 {
+            color: var(--text-secondary);
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .auth-header p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
         }
 
         .tabs {
             display: flex;
-            margin-bottom: 30px;
-            border-bottom: 2px solid #f0f0f0;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            background: var(--bg-body);
+            padding: 0.5rem;
+            border-radius: 50px;
+            border: 1px solid var(--border-color);
         }
 
         .tab {
             flex: 1;
             text-align: center;
-            padding: 15px;
+            padding: 0.8rem;
             cursor: pointer;
-            color: #666;
+            color: var(--text-muted);
             font-weight: 500;
             transition: all 0.3s;
+            border-radius: 40px;
+            font-size: 0.95rem;
         }
 
         .tab.active {
-            color: #667eea;
-            border-bottom: 2px solid #667eea;
-            margin-bottom: -2px;
+            background: var(--icon-color);
+            color: white;
         }
 
         .form {
@@ -59,60 +200,96 @@
             display: block;
         }
 
-        h2 {
-            color: #333;
-            margin-bottom: 30px;
-            text-align: center;
-        }
-
         .input-group {
-            margin-bottom: 20px;
+            margin-bottom: 1.5rem;
         }
 
-        label {
+        .input-group label {
             display: block;
-            margin-bottom: 8px;
-            color: #555;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
             font-weight: 500;
+            font-size: 0.9rem;
         }
 
-        input {
+        .input-group label i {
+            color: var(--icon-color);
+            width: 18px;
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-wrapper i {
+            position: absolute;
+            left: 1rem;
+            color: var(--icon-color);
+            font-size: 1rem;
+            opacity: 0.7;
+        }
+
+        .input-wrapper input {
             width: 100%;
-            padding: 12px 15px;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            font-size: 16px;
-            transition: border-color 0.3s;
+            padding: 0.9rem 1rem 0.9rem 2.8rem;
+            border: 2px solid var(--border-color);
+            border-radius: 16px;
+            font-size: 0.95rem;
+            transition: all 0.3s;
+            background: var(--input-bg);
+            color: var(--text-primary);
+            font-family: inherit;
         }
 
-        input:focus {
+        .input-wrapper input:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: var(--icon-color);
+            box-shadow: 0 0 0 4px rgba(184, 139, 74, 0.1);
         }
 
-        button {
+        .input-wrapper input::placeholder {
+            color: var(--text-muted);
+            opacity: 0.5;
+        }
+
+        .btn-primary {
             width: 100%;
-            padding: 14px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 1rem;
+            background: #2b7a4ac7;
             color: white;
             border: none;
-            border-radius: 10px;
-            font-size: 16px;
+            border-radius: 16px;
+            font-size: 1rem;
             font-weight: 600;
             cursor: pointer;
-            transition: transform 0.2s;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            font-family: inherit;
+            margin-top: 1rem;
         }
 
-        button:hover {
+        .btn-primary:hover {
             transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(184, 139, 74, 0.2);
+        }
+
+        .btn-primary i {
+            font-size: 1rem;
         }
 
         .message {
-            margin-top: 20px;
-            padding: 12px;
-            border-radius: 8px;
+            margin-top: 1.5rem;
+            padding: 1rem;
+            border-radius: 16px;
             display: none;
             text-align: center;
+            font-size: 0.9rem;
+            font-weight: 500;
         }
 
         .message.success {
@@ -128,54 +305,187 @@
             border: 1px solid #f5c6cb;
             display: block;
         }
-        
+
+        .auth-footer {
+            margin-top: 2rem;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            border-top: 1px solid var(--border-color);
+            padding-top: 1.5rem;
+        }
+
+        .auth-footer a {
+            color: var(--icon-color);
+            text-decoration: none;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .auth-footer a:hover {
+            text-decoration: underline;
+        }
+
+        .footer {
+            background: var(--footer-bg);
+            color: var(--footer-text);
+            margin-top: auto;
+            padding: 2rem;
+            transition: background-color 0.3s ease;
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .footer-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .footer-brand i {
+            color: var(--icon-color);
+            font-size: 1.2rem;
+        }
+
+        .footer-brand span {
+            font-weight: 500;
+        }
+
+        .footer-copyright {
+            color: var(--footer-text-secondary);
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .navbar {
+                padding: 1rem 1.5rem;
+            }
+            
+            .auth-card {
+                padding: 1.5rem;
+            }
+            
+            .footer-content {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="tabs">
-            <div class="tab active" onclick="showTab('login')">Login</div>
-            <div class="tab" onclick="showTab('cadastro')">Cadastro</div>
-        </div>
+    <div class="navbar">
+        <h1><i class="fas fa-folder-tree"></i> Organizador de Arquivos</h1>
+        <button class="tema-btn" onclick="alternarTema()" id="temaBtn">
+            <i class="fas fa-moon" id="temaIcone"></i> <span id="temaTexto">Escuro</span>
+        </button>
+    </div>
 
-        <!-- Formulário de Login -->
-        <div id="loginForm" class="form active">
-            <h2>Bem-vindo de volta!</h2>
-            <div class="input-group">
-                <label>Email</label>
-                <input type="email" id="loginEmail" placeholder="seu@email.com">
+    <div class="main-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <i class="fas fa-folder-open"></i>
+                <h2>Bem-vindo</h2>
+                <p>Organize seus arquivos com segurança e elegância</p>
             </div>
-            <div class="input-group">
-                <label>Senha</label>
-                <input type="password" id="loginSenha" placeholder="••••••••">
-            </div>
-            <button onclick="fazerLogin()">Entrar</button>
-            <div id="loginMessage" class="message"></div>
-        </div>
 
-        <!-- Formulário de Cadastro -->
-        <div id="cadastroForm" class="form">
-            <h2>Crie sua conta</h2>
-            <div class="input-group">
-                <label>Nome</label>
-                <input type="text" id="cadastroNome" placeholder="Seu nome completo">
+            <div class="tabs">
+                <div class="tab active" onclick="showTab('login')">Entrar</div>
+                <div class="tab" onclick="showTab('cadastro')">Criar conta</div>
             </div>
-            <div class="input-group">
-                <label>Email</label>
-                <input type="email" id="cadastroEmail" placeholder="seu@email.com">
+
+            <div id="loginForm" class="form active">
+                <div class="input-group">
+                    <label><i class="fas fa-envelope"></i> Email</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-envelope"></i>
+                        <input type="email" id="loginEmail" placeholder="seu@email.com">
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label><i class="fas fa-lock"></i> Senha</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="loginSenha" placeholder="••••••••">
+                    </div>
+                </div>
+                <button class="btn-primary" onclick="fazerLogin()">
+                    <i class="fas fa-sign-in-alt"></i> Entrar
+                </button>
+                <div id="loginMessage" class="message"></div>
             </div>
-            <div class="input-group">
-                <label>Senha</label>
-                <input type="password" id="cadastroSenha" placeholder="••••••••">
+
+            <div id="cadastroForm" class="form">
+                <div class="input-group">
+                    <label><i class="fas fa-user"></i> Nome</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-user"></i>
+                        <input type="text" id="cadastroNome" placeholder="Seu nome completo">
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label><i class="fas fa-envelope"></i> Email</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-envelope"></i>
+                        <input type="email" id="cadastroEmail" placeholder="seu@email.com">
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label><i class="fas fa-lock"></i> Senha</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="cadastroSenha" placeholder="••••••••">
+                    </div>
+                </div>
+                <button class="btn-primary" onclick="fazerCadastro()">
+                    <i class="fas fa-user-plus"></i> Criar conta
+                </button>
+                <div id="cadastroMessage" class="message"></div>
             </div>
-            <button onclick="fazerCadastro()">Cadastrar</button>
-            <div id="cadastroMessage" class="message"></div>
+
+            <div class="auth-footer">
+                <span>Ao continuar, você </span>
+                <a>terá seus dados protegidos</a>
+            </div>
         </div>
     </div>
 
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-brand">
+                <i class="fas fa-folder-tree"></i>
+                <span>Organizador de Arquivos</span>
+            </div>
+            <div class="footer-copyright">
+                © 2026 Matheus Abib
+            </div>
+        </div>
+    </footer>
+
     <script>
+        function alternarTema() {
+            document.body.classList.toggle('dark-mode');
+            const temaBtn = document.getElementById('temaBtn');
+            const temaIcone = document.getElementById('temaIcone');
+            const temaTexto = document.getElementById('temaTexto');
+            
+            if (document.body.classList.contains('dark-mode')) {
+                temaIcone.className = 'fas fa-sun';
+                temaTexto.textContent = 'Claro';
+            } else {
+                temaIcone.className = 'fas fa-moon';
+                temaTexto.textContent = 'Escuro';
+            }
+        }
+
         function showTab(tab) {
-            // Atualizar abas
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.form').forEach(f => f.classList.remove('active'));
             
@@ -194,7 +504,6 @@
             const senha = document.getElementById('cadastroSenha').value;
             const messageDiv = document.getElementById('cadastroMessage');
 
-            // Validação básica
             if (!nome || !email || !senha) {
                 messageDiv.className = 'message error';
                 messageDiv.textContent = 'Preencha todos os campos!';
@@ -216,12 +525,10 @@
                     messageDiv.className = 'message success';
                     messageDiv.textContent = 'Cadastro realizado com sucesso! Faça login.';
                     
-                    // Limpar campos
                     document.getElementById('cadastroNome').value = '';
                     document.getElementById('cadastroEmail').value = '';
                     document.getElementById('cadastroSenha').value = '';
                     
-                    // Mudar para aba de login após 2 segundos
                     setTimeout(() => showTab('login'), 1500);
                 } else {
                     messageDiv.className = 'message error';
@@ -233,50 +540,54 @@
             }
         }
 
-async function fazerLogin() {
-    const email = document.getElementById('loginEmail').value;
-    const senha = document.getElementById('loginSenha').value;
-    const messageDiv = document.getElementById('loginMessage');
+        async function fazerLogin() {
+            const email = document.getElementById('loginEmail').value;
+            const senha = document.getElementById('loginSenha').value;
+            const messageDiv = document.getElementById('loginMessage');
 
-    if (!email || !senha) {
-        messageDiv.className = 'message error';
-        messageDiv.textContent = 'Preencha todos os campos!';
-        return;
-    }
+            if (!email || !senha) {
+                messageDiv.className = 'message error';
+                messageDiv.textContent = 'Preencha todos os campos!';
+                return;
+            }
 
-    try {
-        const response = await fetch('http://localhost:3000/api/login', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ email, senha })
-        });
+            try {
+                const response = await fetch('http://localhost:3000/api/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, senha })
+                });
 
-        const data = await response.json();
+                const data = await response.json();
 
-        if (response.ok) {
-            messageDiv.className = 'message success';
-            messageDiv.textContent = 'Login realizado! Redirecionando...';
-            
-            localStorage.setItem('usuario', JSON.stringify(data.usuario));
-            
-            setTimeout(() => {
-                if (data.usuario.tipo === 'admin') {
-                    window.location.href = 'admin.html';
+                if (response.ok) {
+                    messageDiv.className = 'message success';
+                    messageDiv.textContent = 'Login realizado! Redirecionando...';
+                    
+                    localStorage.setItem('usuario', JSON.stringify(data.usuario));
+                    
+                    setTimeout(() => {
+                        if (data.usuario.tipo === 'admin') {
+                            window.location.href = 'admin.html';
+                        } else {
+                            window.location.href = 'dashboard.html';
+                        }
+                    }, 1500);
                 } else {
-                    window.location.href = 'dashboard.html';
+                    messageDiv.className = 'message error';
+                    messageDiv.textContent = data.error || 'Email ou senha inválidos';
                 }
-            }, 1500);
-        } else {
-            messageDiv.className = 'message error';
-            messageDiv.textContent = data.error || 'Email ou senha inválidos';
+            } catch (error) {
+                messageDiv.className = 'message error';
+                messageDiv.textContent = 'Erro de conexão com o servidor';
+            }
         }
-    } catch (error) {
-        messageDiv.className = 'message error';
-        messageDiv.textContent = 'Erro de conexão com o servidor';
-    }
-}
+
+        if (localStorage.getItem('tema') === 'dark') {
+            document.body.classList.add('dark-mode');
+        }
     </script>
 </body>
 </html>

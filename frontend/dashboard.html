@@ -4,32 +4,40 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Organizador de Arquivos</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/primeicons@6.0.0/primeicons.css">
     <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
 <div class="navbar">
-    <h1>📁 Organizador de Arquivos</h1>
-    <div style="display: flex; gap: 1rem; align-items: center;">
-        <button class="favoritos-nav-btn" onclick="mostrarFavoritos()" title="Meus favoritos">
-            ⭐ <span id="favoritosCount">0</span>
+    <h1><i class="fas fa-folder-tree"></i> Organizador de Arquivos</h1>
+    <div class="nav-actions">
+        <button class="tema-btn" onclick="alternarTema()" id="temaBtn" title="Alternar modo claro/escuro">
+            <i class="fas fa-moon" id="temaIcone"></i> <span id="temaTexto">Escuro</span>
         </button>
-        <div class="user-info" style="position: relative;">
+        <button class="favoritos-nav-btn" onclick="mostrarFavoritos()" title="Meus favoritos">
+            <i class="fas fa-star"></i> Favoritos <span id="favoritosCount">0</span>
+        </button>
+        <div class="user-info">
             <button class="user-menu-btn" onclick="toggleUserMenu()">
+                <i class="fas fa-user-circle"></i>
                 <span id="userName">Carregando...</span>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                    <circle cx="12" cy="7" r="4"></circle>
-                </svg>
+                <i class="fas fa-chevron-down" style="font-size: 0.8rem; opacity: 0.7;"></i>
             </button>
             <div id="userMenu" class="user-menu" style="display: none;">
                 <div class="user-menu-header">
                     <strong>Minha Conta</strong>
                 </div>
                 <div class="user-menu-item" onclick="abrirModalUsuario()">
-                    <span>👤 Ver perfil</span>
+                    <i class="fas fa-user"></i> Ver perfil
+                </div>
+                <div class="user-menu-item" onclick="alternarTema()">
+                    <i class="fas fa-palette"></i> Alternar tema
                 </div>
                 <div class="user-menu-divider"></div>
-                <button class="logout-btn" onclick="logout()" style="width: 100%; text-align: left; background: none; color: #ff4444; padding: 0.8rem 1rem;">Sair</button>
+                <button class="logout-btn" onclick="mostrarConfirmacao('Sair', 'Deseja realmente sair do sistema?', logout)">
+                    <i class="fas fa-sign-out-alt"></i> Sair
+                </button>
             </div>
         </div>
     </div>
@@ -38,137 +46,139 @@
 <div class="modal" id="usuarioModal">
     <div class="modal-content" style="max-width: 400px;">
         <div class="modal-header">
-            <h2>👤 Meu Perfil</h2>
+            <h2><i class="fas fa-user-circle"></i> Meu Perfil</h2>
             <button class="modal-close" onclick="fecharModalUsuario()">&times;</button>
         </div>
         <div class="modal-body">
             <div id="perfilVisualizacao">
                 <div style="text-align: center; margin-bottom: 2rem;">
-                    <div style="font-size: 4rem; margin-bottom: 1rem;">👤</div>
-                    <h3 id="perfilNome">Carregando...</h3>
-                    <p id="perfilEmail" style="color: #666;">Carregando...</p>
+                    <div style="font-size: 4rem; margin-bottom: 1rem; color: var(--icon-color);"><i class="fas fa-user-circle"></i></div>
+                    <h3 id="perfilNome" style="color: var(--text-secondary);">Carregando...</h3>
+                    <p id="perfilEmail" style="color: var(--text-muted);">Carregando...</p>
                 </div>
-                <button class="modal-header-btn primary" onclick="editarPerfil()" style="width: 100%;">✏️ Editar perfil</button>
+                <button class="modal-header-btn primary" onclick="editarPerfil()" style="display: flex; justify-content: center; align-items: center; width: 55%; margin: 0 auto;"><i class="fas fa-edit"></i> Editar perfil</button>
             </div>
             <div id="perfilEdicao" style="display: none;">
                 <div style="margin-bottom: 1rem;">
-                    <label style="display: block; margin-bottom: 0.5rem; color: #333;">Nome</label>
+                    <label style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary);">Nome</label>
                     <input type="text" id="editNome" class="busca-input" style="width: 100%;">
                 </div>
                 <div style="margin-bottom: 1rem;">
-                    <label style="display: block; margin-bottom: 0.5rem; color: #333;">Email</label>
+                    <label style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary);">Email</label>
                     <input type="email" id="editEmail" class="busca-input" style="width: 100%;">
                 </div>
                 <div style="margin-bottom: 1.5rem;">
-                    <label style="display: block; margin-bottom: 0.5rem; color: #333;">Nova senha</label>
+                    <label style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary);">Nova senha</label>
                     <input type="password" id="editSenha" class="busca-input" style="width: 100%;" placeholder="Deixe em branco para manter a atual">
                 </div>
                 <div style="display: flex; gap: 1rem;">
-                    <button class="modal-header-btn primary" onclick="salvarPerfil()" style="flex: 1;">Salvar</button>
-                    <button class="modal-header-btn" onclick="cancelarEdicaoPerfil()" style="flex: 1;">Cancelar</button>
+                    <button class="modal-header-btn primary" onclick="salvarPerfil()" style="flex: 1;"><i class="fas fa-check"></i> Salvar</button>
+                    <button class="modal-header-btn secondary" onclick="cancelarEdicaoPerfil()" style="flex: 1;"><i class="fas fa-times"></i> Cancelar</button>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-    <div class="modal" id="favoritosModal">
-        <div class="modal-content" style="max-width: 800px;">
-            <div class="modal-header">
-                <h2>⭐ Meus Arquivos Favoritos</h2>
-                <button class="modal-close" onclick="fecharFavoritosModal()">&times;</button>
-            </div>
-            <div class="modal-body" id="favoritosModalBody">
-                <div class="loading">Carregando favoritos...</div>
-            </div>
+<div class="modal" id="favoritosModal">
+    <div class="modal-content" style="max-width: 800px;">
+        <div class="modal-header">
+            <h2><i class="fas fa-star"></i> Meus Arquivos Favoritos</h2>
+            <button class="modal-close" onclick="fecharFavoritosModal()">&times;</button>
+        </div>
+        <div class="modal-body" id="favoritosModalBody">
+            <div class="loading">Carregando favoritos...</div>
         </div>
     </div>
+</div>
 
-    <div class="main-container">
-        <div class="sidebar">
-            <div class="sidebar-header">
-                <h3>📂 Pastas</h3>
-                <div style="display: flex; gap: 0.5rem;">
-                    <button class="nova-pasta-btn" onclick="toggleTodasPastas()" id="togglePastasBtn" title="Expandir/Recolher todas">
-                        <span id="toggleIcon">▼</span> <span id="toggleText">Expandir todas</span>
-                    </button>
-                    <button class="nova-pasta-btn" onclick="criarPasta()">+ Nova</button>
-                </div>
-            </div>
-            
-            <ul class="pastas-list" id="pastasList">
-                <li class="pasta-item root" onclick="fecharModalPasta()">
-                    📁 Todos os arquivos
-                </li>
-            </ul>
-            
-            <div class="compartilhados-section">
-                <h4>🔗 Compartilhados comigo</h4>
-                <ul class="pastas-list" id="compartilhadosList"></ul>
+<div class="main-container">
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h3><i class="fas fa-folder" style="color: var(--icon-color);"></i> Pastas</h3>
+            <div style="display: flex; gap: 0.5rem;">
+                <button class="expandir-btn" onclick="toggleTodasPastas()" id="togglePastasBtn" title="Expandir/Recolher todas">
+                    <span id="toggleIcon"><i class="fas fa-chevron-down"></i></span> <span id="toggleText">Expandir</span>
+                </button>
+                <button class="nova-pasta-btn" onclick="criarPasta()"><i class="fas fa-plus"></i> Nova</button>
             </div>
         </div>
         
-        <div class="content-area">
-            <div class="upload-area" onclick="document.getElementById('fileInput').click()">
-                <div>📤</div>
-                <p>Arraste arquivos ou clique para fazer upload</p>
-                <small>Suporta: PDF, Word, Excel, PowerPoint, Imagens, TXT (máx. 10MB)</small>
-            </div>
-            <input type="file" id="fileInput" multiple onchange="uploadArquivos(this.files)">
-
-            <div class="toolbar">
-                <div class="busca-container">
-                    <input type="text" id="buscaInput" placeholder="🔍 Buscar arquivos pelo nome..." class="busca-input" onkeyup="buscarArquivos()">
-                </div>
-                <div class="view-options">
-                    <button class="view-btn active" onclick="mudarVisualizacao('grid')" title="Visualização em grade">📱 Grid</button>
-                    <button class="view-btn" onclick="mudarVisualizacao('lista')" title="Visualização em lista">📋 Lista</button>
-                </div>
-            </div>
-
-            <div class="filtros">
-                <button class="filtro-btn active" onclick="filtrarArquivos('todos')">Todos</button>
-                <button class="filtro-btn" onclick="filtrarArquivos('pdf')">PDF</button>
-                <button class="filtro-btn" onclick="filtrarArquivos('word')">Word</button>
-                <button class="filtro-btn" onclick="filtrarArquivos('excel')">Excel</button>
-                <button class="filtro-btn" onclick="filtrarArquivos('powerpoint')">PowerPoint</button>
-                <button class="filtro-btn" onclick="filtrarArquivos('imagem')">Imagens</button>
-                <button class="filtro-btn" onclick="filtrarArquivos('texto')">Texto</button>
-                <button class="filtro-btn" onclick="filtrarArquivos('outros')">Outros</button>
-            </div>
-
-            <div class="arquivos-container" id="arquivosContainer">
-                <div class="arquivos-grid" id="arquivosGrid">
-                    <div class="loading">Carregando arquivos...</div>
-                </div>
-            </div>
-            
+        <ul class="pastas-list" id="pastasList">
+            <li class="pasta-item root" onclick="fecharModalPasta()">
+                <i class="fas fa-folder-open" style="color: var(--icon-color);"></i> Todos os arquivos
+            </li>
+        </ul>
+        
+        <div class="compartilhados-section">
+            <h4><i class="fas fa-share-alt"></i> Compartilhados comigo</h4>
+            <ul class="pastas-list" id="compartilhadosList"></ul>
         </div>
     </div>
+    
+    <div class="content-area">
+        <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+            <div><i class="fas fa-cloud-upload-alt fa-3x"></i></div>
+            <p>Arraste arquivos ou clique para fazer upload</p>
+            <small>Suporta: PDF, Word, Excel, PowerPoint, Imagens, TXT (máx. 10MB)</small>
+        </div>
+        <input type="file" id="fileInput" multiple onchange="uploadArquivos(this.files)">
 
-    <div class="modal" id="imagemModal" onclick="fecharModal()">
-        <span class="modal-close" onclick="fecharModal()">&times;</span>
-        <img id="modalImagem" src="" alt="Imagem ampliada">
+        <div class="toolbar">
+            <div class="busca-container" style="position: relative;">
+                <i class="fas fa-search" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--text-muted); z-index: 1;"></i>
+                <input type="text" id="buscaInput" placeholder="Buscar arquivos pelo nome..." class="busca-input" onkeyup="buscarArquivos()" style="width: 100%; padding: 0.8rem 0.8rem 0.8rem 45px;">
+            </div>
+            <div class="view-options">
+                <button class="view-btn active" onclick="mudarVisualizacao('grid')" title="Visualização em grade"><i class="fas fa-th-large"></i> Grid</button>
+                <button class="view-btn" onclick="mudarVisualizacao('lista')" title="Visualização em lista"><i class="fas fa-list"></i> Lista</button>
+            </div>
+        </div>
+
+        <div class="filtros">
+            <button class="filtro-btn active" onclick="filtrarArquivos('todos')"><i class="fas fa-file"></i> Todos</button>
+            <button class="filtro-btn" onclick="filtrarArquivos('pdf')"><i class="fas fa-file-pdf"></i> PDF</button>
+            <button class="filtro-btn" onclick="filtrarArquivos('word')"><i class="fas fa-file-word"></i> Word</button>
+            <button class="filtro-btn" onclick="filtrarArquivos('excel')"><i class="fas fa-file-excel"></i> Excel</button>
+            <button class="filtro-btn" onclick="filtrarArquivos('powerpoint')"><i class="fas fa-file-powerpoint"></i> PowerPoint</button>
+            <button class="filtro-btn" onclick="filtrarArquivos('imagem')"><i class="fas fa-file-image"></i> Imagens</button>
+            <button class="filtro-btn" onclick="filtrarArquivos('texto')"><i class="fas fa-file-alt"></i> Texto</button>
+            <button class="filtro-btn" onclick="filtrarArquivos('outros')"><i class="fas fa-file"></i> Outros</button>
+        </div>
+
+        <div class="arquivos-container" id="arquivosContainer">
+            <div class="arquivos-grid" id="arquivosGrid">
+                <div class="loading">Carregando arquivos...</div>
+            </div>
+        </div>
+        
     </div>
+</div>
+
+<div class="modal" id="imagemModal" onclick="fecharModal()">
+    <span class="modal-close" onclick="fecharModal()">&times;</span>
+    <img id="modalImagem" src="" alt="Imagem ampliada" style="max-width: 90%; max-height: 90%; object-fit: contain;">
+</div>
 
 <div class="modal" id="pastaModal">
     <div class="modal-content">
         <div class="modal-header">
-            <h2 id="pastaModalTitle">📁 Nome da Pasta</h2>
+            <h2 id="pastaModalTitle"><i class="fas fa-folder"></i> Nome da Pasta</h2>
             <div class="modal-header-actions">
-                <div class="pasta-actions-dropdown" style="position: relative; margin-right: 0.5rem;">
-                    <button class="pasta-action-btn dropdown-toggle" onclick="toggleModalDropdown()" title="Ações da pasta">⚙️</button>
+                <div class="pasta-actions-dropdown" style="position: relative;">
+                    <button class="modal-header-btn secondary dropdown-toggle" onclick="toggleModalDropdown()" title="Ações da pasta">
+                        <i class="fas fa-cog"></i> Ações
+                    </button>
                     <div id="modalDropdown" class="dropdown-menu" style="display: none;">
-                        <button class="dropdown-item" onclick="downloadPasta(pastaModalAtual, document.getElementById('pastaModalTitle').innerText.replace('📁 ', ''))">📥 Baixar pasta</button>
-                        <button class="dropdown-item" onclick="criarSubPasta()">➕ Nova subpasta</button>
-                        <button class="dropdown-item" onclick="abrirCompartilharModal(pastaModalAtual)">🔗 Compartilhar</button>
-                        <button class="dropdown-item" onclick="renomearPasta(pastaModalAtual)">✏️ Renomear</button>
-                        <button class="dropdown-item" onclick="deletarPasta(pastaModalAtual)">🗑️ Excluir</button>
+                        <button class="dropdown-item" onclick="downloadPasta(pastaModalAtual, document.getElementById('pastaModalTitle').innerText.replace('📁 ', '')"><i class="fas fa-download"></i> Baixar pasta</button>
+                        <button class="dropdown-item" onclick="criarSubPasta()"><i class="fas fa-folder-plus"></i> Nova subpasta</button>
+                        <button class="dropdown-item" onclick="abrirCompartilharModal(pastaModalAtual)"><i class="fas fa-share-alt"></i> Compartilhar</button>
+                        <button class="dropdown-item" onclick="renomearPasta(pastaModalAtual)"><i class="fas fa-edit"></i> Renomear</button>
+                        <button class="dropdown-item" onclick="deletarPasta(pastaModalAtual)"><i class="fas fa-trash"></i> Excluir</button>
                     </div>
                 </div>
-                <button class="modal-header-btn primary" onclick="criarSubPasta()">+ Nova Pasta</button>
-                <button class="modal-header-btn primary" onclick="uploadParaPasta()">📤 Upload</button>
-                <button class="modal-header-btn primary" onclick="abrirSeletorArquivos()">📦 + Existente</button>
+                <button class="modal-header-btn primary" onclick="uploadParaPasta()"><i class="fas fa-upload"></i> Upload</button>
+                <button class="modal-header-btn primary" onclick="abrirSeletorArquivos()"><i class="fas fa-copy"></i> + Existente</button>
                 <button class="modal-close" onclick="fecharModalPasta()">&times;</button>
             </div>
         </div>
@@ -178,57 +188,235 @@
     </div>
 </div>
 
-    <div class="modal" id="moverModal" style="display: none;">
-        <div class="mover-modal">
-            <h3>Mover arquivo para pasta</h3>
-            <select id="pastaDestinoSelect">
-                <option value="">Raiz (sem pasta)</option>
+<div class="modal" id="moverModal">
+    <div class="modal-content" style="max-width: 400px;">
+        <div class="modal-header">
+            <h2><i class="fas fa-arrows-alt"></i> Mover arquivo</h2>
+            <button class="modal-close" onclick="fecharMoverModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <select id="pastaDestinoSelect" style="width: 100%; padding: 0.8rem; border: 1px solid var(--border-color); border-radius: 12px; margin-bottom: 2rem; font-size: 1rem; background: var(--input-bg); color: var(--text-primary);">
+                <option value=""><i class="fas fa-folder"></i> Raiz (sem pasta)</option>
             </select>
-            <div class="mover-modal-actions">
-                <button class="mover-modal-btn confirm" onclick="confirmarMover()">Mover</button>
-                <button class="mover-modal-btn cancel" onclick="fecharMoverModal()">Cancelar</button>
+            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                <button class="modal-header-btn primary" onclick="confirmarMover()"><i class="fas fa-check"></i> Mover</button>
+                <button class="modal-header-btn secondary" onclick="fecharMoverModal()"><i class="fas fa-times"></i> Cancelar</button>
             </div>
         </div>
     </div>
+</div>
 
-    <div class="modal" id="seletorArquivosModal">
+<div class="modal" id="seletorArquivosModal">
     <div class="modal-content" style="max-width: 600px;">
         <div class="modal-header">
-            <h2>📦 Adicionar arquivos existentes</h2>
+            <h2><i class="fas fa-copy"></i> Adicionar arquivos existentes</h2>
             <button class="modal-close" onclick="fecharSeletorArquivos()">&times;</button>
         </div>
         <div class="modal-body">
-            <div class="seletor-filtros">
-                <input type="text" id="seletorBusca" placeholder="🔍 Buscar arquivos..." class="busca-input" onkeyup="filtrarArquivosSeletor()">
+            <div class="seletor-filtros" style="position: relative;">
+                <i class="fas fa-search" style="position: absolute; left: 15px; top: 17px; color: var(--icon-color);"></i>
+                <input type="text" id="seletorBusca" placeholder="Buscar arquivos..." class="busca-input" onkeyup="filtrarArquivosSeletor()" style="padding-left: 45px;">
             </div>
             <div class="seletor-arquivos-lista" id="seletorArquivosLista">
                 <div class="loading">Carregando arquivos...</div>
             </div>
             <div class="seletor-acoes">
-                <button class="modal-header-btn primary" onclick="adicionarArquivosSelecionados()" id="btnAdicionarSelecionados" disabled>Adicionar selecionados (0)</button>
-                <button class="modal-header-btn" onclick="fecharSeletorArquivos()">Cancelar</button>
+                <button class="modal-header-btn primary" onclick="adicionarArquivosSelecionados()" id="btnAdicionarSelecionados" disabled><i class="fas fa-plus"></i> Adicionar selecionados (0)</button>
+                <button class="modal-header-btn secondary" onclick="fecharSeletorArquivos()"><i class="fas fa-times"></i> Cancelar</button>
             </div>
         </div>
     </div>
 </div>
 
-
 <div class="modal" id="comentarioModal">
     <div class="modal-content comentario-modal">
         <div class="modal-header">
-            <h2 id="comentarioModalTitle">💬 Comentário</h2>
+            <h2 id="comentarioModalTitle"><i class="fas fa-comment"></i> Comentário</h2>
             <button class="modal-close" onclick="fecharComentarioModal()">&times;</button>
         </div>
         <div class="modal-body">
             <textarea id="comentarioTextarea" class="comentario-textarea" placeholder="Escreva seu comentário sobre este arquivo..."></textarea>
             <div class="comentario-actions">
-                <button class="modal-header-btn primary" onclick="salvarComentario()">Salvar</button>
-                <button class="modal-header-btn" onclick="fecharComentarioModal()">Cancelar</button>
+                <button class="modal-header-btn primary" onclick="salvarComentario()"><i class="fas fa-save"></i> Salvar</button>
+                <button class="modal-header-btn secondary" onclick="fecharComentarioModal()"><i class="fas fa-times"></i> Cancelar</button>
             </div>
         </div>
     </div>
 </div>
 
-    <script src="./script.js"></script>
+<div class="modal" id="confirmModal">
+    <div class="modal-content" style="max-width: 400px;">
+        <div class="modal-header">
+            <h2 id="confirmTitle"><i class="fas fa-question-circle"></i> Confirmar ação</h2>
+            <button class="modal-close" onclick="fecharConfirmModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p id="confirmMessage" style="margin-bottom: 2rem; color: var(--text-secondary);">Deseja continuar?</p>
+            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                <button class="modal-header-btn secondary" onclick="fecharConfirmModal()"><i class="fas fa-times"></i> Cancelar</button>
+                <button class="modal-header-btn primary" id="confirmActionBtn" onclick="executarConfirmAction()"><i class="fas fa-check"></i> Confirmar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="promptModal">
+    <div class="modal-content" style="max-width: 400px;">
+        <div class="modal-header">
+            <h2 id="promptTitle"><i class="fas fa-pencil-alt"></i> Digite o valor</h2>
+            <button class="modal-close" onclick="fecharPromptModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p id="promptMessage" style="margin-bottom: 1rem; color: var(--text-secondary);"></p>
+            <input type="text" id="promptInput" class="busca-input" style="width: 100%; margin-bottom: 2rem;" placeholder="Digite aqui...">
+            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                <button class="modal-header-btn secondary" onclick="fecharPromptModal()"><i class="fas fa-times"></i> Cancelar</button>
+                <button class="modal-header-btn primary" onclick="executarPromptAction()"><i class="fas fa-check"></i> Confirmar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="alertModal">
+    <div class="modal-content" style="max-width: 400px;">
+        <div class="modal-header">
+            <h2 id="alertTitle"><i class="fas fa-exclamation-triangle"></i> Aviso</h2>
+            <button class="modal-close" onclick="fecharAlertModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p id="alertMessage" style="margin-bottom: 2rem; color: var(--text-secondary);"></p>
+            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                <button class="modal-header-btn primary" onclick="fecharAlertModal()"><i class="fas fa-check"></i> OK</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer class="footer">
+    <div class="footer-content">
+        <div class="footer-main">
+            <div class="footer-brand">
+                <h2><i class="fas fa-folder-tree"></i>  Organizador de Arquivos</h2>
+                <p class="footer-description">
+                    Plataforma profissional para gerenciamento de arquivos.<br>
+                    Solução completa para pessoas que buscam organização e segurança.
+                </p>
+            </div>
+            
+            <div class="footer-links-grid">
+                <div class="footer-column">
+                    <h3>Funcionalidades</h3>
+                    <ul>
+                        <li><a>Gerenciamento de Arquivos</a></li>
+                        <li><a>Pastas Compartilhadas</a></li>
+                        <li><a>Sistema de Favoritos</a></li>
+                        <li><a>Comentários e Anotações</a></li>
+                        <li><a>Busca Avançada</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-column">
+                    <h3>Soluções</h3>
+                    <ul>
+                        <li><a>Para Empresas</a></li>
+                        <li><a>Para Equipes</a></li>
+                        <li><a>Para Profissionais</a></li>
+                        <li><a>Para Uso Pessoal</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-column">
+                    <h3>Suporta</h3>
+                    <ul>
+                        <li><a>PDF</a></li>
+                        <li><a>TXT</a></li>
+                        <li><a>Word</a></li>
+                        <li><a>Excel</a></li>
+                        <li><a>PowerPoint</a></li>
+                        <li><a>Outros</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-column">
+                    <h3>Legal</h3>
+                    <ul>
+                        <li><a>Senha Criptografada</a></li>
+                        <li><a>Conexão Segura</a></li>
+                        <li><a>Proteção de Dados</a></li>
+                        <li><a>Autenticação Segura</a></li>
+                        <li><a>Conformidade com LGPD</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer-corporate">
+            <div class="corporate-info">
+                <div class="info-item">
+                    <i class="fas fa-laptop-code"></i>
+                    <div>
+                        <strong>Desenvolvedor</strong>
+                        <span>Matheus Bilitardo Abib</span>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <i class="fas fa-phone-alt"></i>
+                    <div>
+                        <strong>Telefone</strong>
+                        <span>11 97507-2008</span>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <i class="fas fa-envelope"></i>
+                    <div>
+                        <strong>Email Pessoal</strong>
+                        <span>matheus.abib.ma@gmail.com</span>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <i class="fab fa-linkedin"></i>
+                    <div>
+                        <strong>LinkedIn</strong>
+                        <a href="https://www.linkedin.com/in/matheusabib/" target="_blank">
+                            linkedin.com/in/matheusabib
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="certifications">
+                <div class="cert-badge">
+                    <i class="fas fa-shield-alt"></i>
+                    <span>Certificado SSL 256 bits</span>
+                </div>
+                <div class="cert-badge">
+                    <i class="fas fa-lock"></i>
+                    <span>Criptografia End-to-End</span>
+                </div>
+                <div class="cert-badge">
+                    <i class="fas fa-database"></i>
+                    <span>Backup Diário</span>
+                </div>
+                <div class="cert-badge">
+                    <i class="fas fa-cloud"></i>
+                    <span>99.9% Uptime</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="footer-bottom">
+        <div class="bottom-container">
+            <div class="copyright">
+                <i class="far fa-copyright"></i> 2026 Organizador de Arquivos. Todos os direitos reservados.
+            </div>
+            <div class="developed-by">
+                Desenvolvido por <strong>Matheus Abib</strong>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<script src="./script.js"></script>
 </body>
 </html>
