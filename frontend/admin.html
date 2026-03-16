@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Organizador de Arquivos</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="./stylesAdmin.css">
+
+</head>
+<body>
+    <div class="navbar">
+        <h1><i class="fas fa-crown"></i> Admin - Organizador de Arquivos</h1>
+        <div class="user-info">
+            <span id="userName">Carregando...</span>
+            <button class="logout-btn" onclick="mostrarConfirmacao('Sair', 'Deseja realmente sair do sistema?', logout)"><i class="fas fa-sign-out-alt"></i> Sair</button>
+        </div>
+    </div>
+    
+    <div class="admin-container">
+        <div class="admin-header">
+            <h2><i class="fas fa-tachometer-alt"></i> Painel Administrativo</h2>
+            <p>Gerencie usuários e visualize estatísticas do sistema</p>
+        </div>
+        
+        <div class="stats-grid" id="stats">
+            <div class="stat-card">
+                <div><i class="fas fa-users"></i> Total de Usuários</div>
+                <div class="stat-number" id="totalUsuarios">0</div>
+            </div>
+            <div class="stat-card">
+                <div><i class="fas fa-file"></i> Total de Arquivos</div>
+                <div class="stat-number" id="totalArquivos">0</div>
+            </div>
+            <div class="stat-card">
+                <div><i class="fas fa-folder"></i> Total de Pastas</div>
+                <div class="stat-number" id="totalPastas">0</div>
+            </div>
+            <div class="stat-card">
+                <div><i class="fas fa-hdd"></i> Espaço Total</div>
+                <div class="stat-number" id="totalEspaco">0 MB</div>
+            </div>
+        </div>
+        
+        <div class="usuarios-table">
+            <h3 style="margin-bottom: 1rem;"><i class="fas fa-user-friends"></i> Usuários</h3>
+            <table id="usuariosTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nome</th>
+                        <th>Email</th>
+                        <th>Tipo</th>
+                        <th>Status</th>
+                        <th>Data Cadastro</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="usuariosList">
+                    <tr><td colspan="7" class="loading">Carregando...</td></tr>
+                </tbody>
+            </table>
+            
+            <div id="paginacaoContainer"></div>
+        </div>
+    </div>
+    
+   <footer class="footer">
+    <div class="footer-content">
+        <div class="footer-main">
+            <div class="footer-brand">
+                <h2><i class="fas fa-folder-open"></i> Organizador de Arquivos</h2>
+                <p class="footer-description">
+                    Plataforma profissional para gerenciamento de arquivos. <br>
+                    Solução completa para pessoas que buscam organização e segurança.
+                </p>
+            </div>
+            
+            <div class="footer-links-grid">
+                <div class="footer-column">
+                    <h3>Funcionalidades</h3>
+                    <ul>
+                        <li><a>Gerenciamento de Arquivos</a></li>
+                        <li><a>Pastas Compartilhadas</a></li>
+                        <li><a>Sistema de Favoritos</a></li>
+                        <li><a>Comentários e Anotações</a></li>
+                        <li><a>Busca Avançada</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-column">
+                    <h3>Soluções</h3>
+                    <ul>
+                        <li><a>Para Empresas</a></li>
+                        <li><a>Para Equipes</a></li>
+                        <li><a>Para Profissionais</a></li>
+                        <li><a>Para Uso Pessoal</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-column">
+                    <h3>Suporta</h3>
+                    <ul>
+                        <li><a>PDF</a></li>
+                        <li><a>TXT</a></li>
+                        <li><a>Word</a></li>
+                        <li><a>Excel</a></li>
+                        <li><a>PowerPoint</a></li>
+                        <li><a>Outros</a></li>
+                    </ul>
+                </div>
+                
+            <div class="footer-column">
+                <h3>Legal</h3>
+                <ul>
+                    <li><a>Senha Criptografada</a></li>
+                    <li><a>Conexão Segura</a></li>
+                    <li><a>Proteção de Dados</a></li>
+                    <li><a>Autenticação Segura</a></li>
+                    <li><a>Conformidade com LGPD</a></li>
+                </ul>
+            </div>
+            </div>
+        </div>
+        
+        <div class="footer-corporate">
+            <div class="corporate-info">
+                <div class="info-item">
+                    <i class="fas fa-laptop-code"></i>
+                    <div>
+                        <strong>Desenvolvedor</strong>
+                        <span>Matheus Bilitardo Abib</span>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <i class="fas fa-phone-alt"></i>
+                    <div>
+                        <strong>Telefone</strong>
+                        <span>11 97507-2008</span>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <i class="fas fa-envelope"></i>
+                    <div>
+                        <strong>Email Pessoal</strong>
+                        <span>matheus.abib.ma@gmail.com</span>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <i class="fab fa-linkedin"></i>
+                    <div>
+                        <strong>LinkedIn</strong>
+                        <a href="https://www.linkedin.com/in/matheusabib/" target="_blank">
+                            linkedin.com/in/matheusabib
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="certifications">
+                <div class="cert-badge">
+                    <i class="fas fa-shield-alt"></i>
+                    <span>Certificado SSL 256 bits</span>
+                </div>
+                <div class="cert-badge">
+                    <i class="fas fa-lock"></i>
+                    <span>Criptografia End-to-End</span>
+                </div>
+                <div class="cert-badge">
+                    <i class="fas fa-database"></i>
+                    <span>Backup Diário</span>
+                </div>
+                <div class="cert-badge">
+                    <i class="fas fa-cloud"></i>
+                    <span>99.9% Uptime</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="footer-bottom">
+        <div class="bottom-container">
+            <div class="copyright">
+                <i class="far fa-copyright"></i> 2026 Organizador de Arquivos. Todos os direitos reservados.
+            </div>
+            <div class="developed-by">
+                Desenvolvido por <strong>Matheus Abib</strong>
+            </div>
+        </div>
+    </div>
+</footer>
+
+    <div class="modal" id="usuarioModal">
+        <div class="modal-content" style="max-width: 500px; background: white; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); margin: auto;">
+            <div class="modal-header" style="padding: 1.5rem; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+                <h2 id="modalUsuarioTitulo"><i class="fas fa-user-circle"></i> Detalhes do Usuário</h2>
+                <button class="modal-close" onclick="fecharModalUsuario()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 1.5rem;">
+                <div id="usuarioVisualizacao">
+                    <div style="text-align: center; margin-bottom: 2rem;">
+                        <div style="font-size: 4rem; margin-bottom: 1rem;"><i class="fas fa-user-circle"></i></div>
+                        <h3 id="visualizarNome">Carregando...</h3>
+                        <p id="visualizarEmail" style="color: #666;">Carregando...</p>
+                        <p id="visualizarStatus" style="margin-top: 0.5rem;"></p>
+                        <p id="visualizarJustificativa" style="margin-top: 0.5rem"></p>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        <button class="btn-admin" onclick="editarUsuarioModal()" style="flex: 1; "><i class="fas fa-edit"></i> Editar</button>
+                    </div>
+                </div>
+                <div id="usuarioEdicao" style="display: none;">
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; margin-bottom: 0.5rem; color: #333;">Nome</label>
+                        <input type="text" id="editNome" class="busca-input" style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 8px;">
+                    </div>
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; margin-bottom: 0.5rem; color: #333;">Email</label>
+                        <input type="email" id="editEmail" class="busca-input" style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 8px;">
+                    </div>
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; margin-bottom: 0.5rem; color: #333;">Nova Senha</label>
+                        <input type="password" id="editSenha" class="busca-input" style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 8px;" placeholder="Deixe em branco para manter a atual">
+                    </div>
+                    <div style="display: flex; gap: 1rem;">
+                        <button class="btn-admin" onclick="salvarEdicaoUsuario()" style="flex: 1; background: #48bb78; color: white; border: none; padding: 0.8rem; border-radius: 8px; cursor: pointer;"><i class="fas fa-check"></i> Salvar</button>
+                        <button class="btn-delete" onclick="cancelarEdicaoUsuario()" style="flex: 1; background: #f0f0f0; color: #333; border: none; padding: 0.8rem; border-radius: 8px; cursor: pointer;"><i class="fas fa-times"></i> Cancelar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="inativarModal">
+        <div class="modal-content" style="max-width: 400px; background: white; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); margin: auto;">
+            <div class="modal-header" style="padding: 1.5rem; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+                <h2><i class="fas fa-exclamation-triangle"></i> Justificativa</h2>
+                <button class="modal-close" onclick="fecharInativarModal()">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 1.5rem;">
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; color: #333;">Justificativa</label>
+                    <textarea id="justificativaText" class="busca-input" style="width: 100%; min-height: 100px; padding: 0.8rem; border: 1px solid #ddd; border-radius: 8px;" placeholder="Motivo da inativação..."></textarea>
+                </div>
+                <div style="display: flex; gap: 1rem;">
+                    <button class="btn-admin" onclick="confirmarInativacao()" ><i class="fas fa-check"></i> Confirmar</button>
+                    <button class="btn-delete" onclick="fecharInativarModal()"><i class="fas fa-times"></i> Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="confirmModal">
+        <div class="modal-content" style="max-width: 400px; background: white; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); margin: auto;">
+            <div class="modal-header" style="padding: 1.5rem; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+                <h2 id="confirmTitle"><i class="fas fa-question-circle"></i> Confirmar ação</h2>
+                <button class="modal-close" onclick="fecharConfirmModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 1.5rem;">
+                <p id="confirmMessage" style="margin-bottom: 2rem; color: #333;">Deseja continuar?</p>
+                <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                    <button class="modal-header-btn" onclick="fecharConfirmModal()" style="background: #f0f0f0; color: #333; border: none; padding: 0.8rem 1.5rem; border-radius: 8px; cursor: pointer;"><i class="fas fa-times"></i> Cancelar</button>
+                    <button class="modal-header-btn primary" id="confirmActionBtn" onclick="executarConfirmAction()" style="background: #48bb78; color: white; border: none; padding: 0.8rem 1.5rem; border-radius: 8px; cursor: pointer;"><i class="fas fa-check"></i> Confirmar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="alertModal">
+        <div class="modal-content" style="max-width: 400px; background: white; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); margin: auto;">
+            <div class="modal-header" style="padding: 1.5rem; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+                <h2 id="alertTitle"><i class="fas fa-exclamation-triangle"></i> Aviso</h2>
+                <button class="modal-close" onclick="fecharAlertModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 1.5rem;">
+                <p id="alertMessage" style="margin-bottom: 2rem; color: #333;"></p>
+                <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                    <button class="modal-header-btn primary" onclick="fecharAlertModal()" style="background: #48bb78; color: white; border: none; padding: 0.8rem 1.5rem; border-radius: 8px; cursor: pointer;"><i class="fas fa-check"></i> OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="./scriptAdmin.js"></script>
+</body>
+</html>
