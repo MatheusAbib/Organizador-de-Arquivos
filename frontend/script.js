@@ -1,4 +1,8 @@
       
+    const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:3000'  
+    : 'https://app-fdeaa58d-ec6e-435f-9f32-f3ea2f463701.cleverapps.io'; 
+    
     let todosArquivos = [];
     let todasPastas = [];
     let compartilhados = [];
@@ -230,7 +234,7 @@ async function adicionarArquivosSelecionados() {
         
         for (const arquivoId of arquivosSelecionados) {
             try {
-                const response = await fetch(`http://localhost:3000/api/arquivos/${arquivoId}/mover`, {
+                const response = await fetch(`${API_URL}/api/arquivos/${arquivoId}/mover`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ pasta_id: pastaModalAtual })
@@ -262,7 +266,7 @@ async function adicionarArquivosSelecionados() {
 
 async function carregarArquivos() {
     try {
-        const response = await fetch(`http://localhost:3000/api/arquivos/${usuario.id}`);
+        const response = await fetch(`${API_URL}/api/arquivos/${usuario.id}`);
         todosArquivos = await response.json();
         paginaAtual = 1;
         
@@ -279,7 +283,7 @@ async function carregarArquivos() {
 
     async function carregarPastas() {
         try {
-            const response = await fetch(`http://localhost:3000/api/pastas/${usuario.id}`);
+            const response = await fetch(`${API_URL}/api/pastas/${usuario.id}`);
             todasPastas = await response.json();
             renderizarPastas();
             
@@ -292,7 +296,7 @@ async function carregarArquivos() {
     }
     async function carregarCompartilhados() {
         try {
-            const response = await fetch(`http://localhost:3000/api/compartilhados/${usuario.id}`);
+            const response = await fetch(`${API_URL}/api/compartilhados/${usuario.id}`);
             compartilhados = await response.json();
             console.log('Pastas compartilhadas carregadas:', compartilhados);
             renderizarCompartilhados();
@@ -306,7 +310,7 @@ async function carregarArquivos() {
 
 async function carregarCompartilhadosPorMim() {
     try {
-        const response = await fetch(`http://localhost:3000/api/compartilhados-por-mim/${usuario.id}`);
+        const response = await fetch(`${API_URL}/api/compartilhados-por-mim/${usuario.id}`);
         if (response.ok) {
             compartilhadosPorMim = await response.json();
             renderizarCompartilhadosPorMim();
@@ -378,7 +382,7 @@ async function confirmarEditarPermissao() {
     
     await withSpinner(async () => {
         try {
-            const response = await fetch(`http://localhost:3000/api/compartilhamentos/${compartilhamentoEditandoPastaId}/${compartilhamentoEditandoUsuarioId}`, {
+            const response = await fetch(`${API_URL}/api/compartilhamentos/${compartilhamentoEditandoPastaId}/${compartilhamentoEditandoUsuarioId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ permissao: novaPermissao })
@@ -402,7 +406,7 @@ async function removerCompartilhamentoPorMim(compartilhamentoId) {
     mostrarConfirmacao('Remover Compartilhamento', 'Deseja realmente remover este compartilhamento?', async () => {
         await withSpinner(async () => {
             try {
-                const response = await fetch(`http://localhost:3000/api/compartilhamentos/${compartilhamentoId}`, {
+                const response = await fetch(`${API_URL}/api/compartilhamentos/${compartilhamentoId}`, {
                     method: 'DELETE'
                 });
                 
@@ -531,7 +535,7 @@ async function removerCompartilhamentoPorMim(compartilhamentoId) {
     mostrarConfirmacao('Remover Compartilhamento', 'Remover esta pasta compartilhada da sua lista? Isso não exclui a pasta original.', async () => {
         await withSpinner(async () => {
             try {
-                const response = await fetch(`http://localhost:3000/api/compartilhamentos/${pastaId}?usuario_id=${usuario.id}`, {
+                const response = await fetch(`${API_URL}/api/compartilhamentos/${pastaId}?usuario_id=${usuario.id}`, {
                     method: 'DELETE'
                 });
                 
@@ -617,7 +621,7 @@ async function abrirModalPasta(pastaId, isCompartilhado = false) {
     
     await withSpinner(async () => {
         try {
-            const response = await fetch(`http://localhost:3000/api/pasta/${pastaModalAtual}/conteudo?usuario_id=${usuario.id}`);
+            const response = await fetch(`${API_URL}/api/pasta/${pastaModalAtual}/conteudo?usuario_id=${usuario.id}`);
             
             if (!response.ok) {
                 throw new Error('Erro ao carregar conteúdo');
@@ -735,7 +739,7 @@ async function removerDaPasta(arquivoId) {
     mostrarConfirmacao('Remover da Pasta', 'Remover este arquivo da pasta? Ele voltará para a raiz.', async () => {
         await withSpinner(async () => {
             try {
-                const response = await fetch(`http://localhost:3000/api/arquivos/${arquivoId}/mover`, {
+                const response = await fetch(`${API_URL}/api/arquivos/${arquivoId}/mover`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ pasta_id: null })
@@ -785,7 +789,7 @@ async function criarPasta(pastaPaiId = null) {
         
         await withSpinner(async () => {
             try {
-                const response = await fetch('http://localhost:3000/api/pastas', {
+                const response = await fetch('${API_URL}/api/pastas', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -1059,7 +1063,7 @@ async function criarPasta(pastaPaiId = null) {
             }
 
             try {
-                const response = await fetch('http://localhost:3000/api/upload', {
+                const response = await fetch('${API_URL}/api/upload', {
                     method: 'POST',
                     body: formData
                 });
@@ -1129,7 +1133,7 @@ async function renomearPasta(pastaId) {
         
         await withSpinner(async () => {
             try {
-                const response = await fetch(`http://localhost:3000/api/pastas/${pastaId}`, {
+                const response = await fetch(`${API_URL}/api/pastas/${pastaId}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ nome: novoNome })
@@ -1162,7 +1166,7 @@ async function deletarPasta(pastaId) {
     mostrarConfirmacao('Excluir Pasta', 'Tem certeza que deseja deletar esta pasta? Os arquivos serão movidos para a raiz.', async () => {
         await withSpinner(async () => {
             try {
-                const response = await fetch(`http://localhost:3000/api/pastas/${pastaId}`, {
+                const response = await fetch(`${API_URL}/api/pastas/${pastaId}`, {
                     method: 'DELETE'
                 });
                 
@@ -1241,7 +1245,7 @@ async function confirmarCompartilhar() {
             
             console.log('Enviando dados:', dados);
             
-            const response = await fetch('http://localhost:3000/api/compartilhar', {
+            const response = await fetch('${API_URL}/api/compartilhar', {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json'
@@ -1710,7 +1714,7 @@ async function deletarArquivo(id) {
     mostrarConfirmacao('Excluir Arquivo', 'Tem certeza que deseja deletar este arquivo?', async () => {
         await withSpinner(async () => {
             try {
-                const response = await fetch(`http://localhost:3000/api/arquivos/${id}`, {
+                const response = await fetch(`${API_URL}/api/arquivos/${id}`, {
                     method: 'DELETE'
                 });
 
@@ -1748,7 +1752,7 @@ async function deletarArquivo(id) {
 async function favoritarArquivo(id, favorito) {
     await withSpinner(async () => {
         try {
-            const response = await fetch(`http://localhost:3000/api/arquivos/${id}/favoritar`, {
+            const response = await fetch(`${API_URL}/api/arquivos/${id}/favoritar`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ favorito })
@@ -1829,7 +1833,7 @@ async function confirmarMover() {
     
     await withSpinner(async () => {
         try {
-            const response = await fetch(`http://localhost:3000/api/arquivos/${arquivoParaMover}/mover`, {
+            const response = await fetch(`${API_URL}/api/arquivos/${arquivoParaMover}/mover`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ pasta_id: pastaDestino || null })
@@ -1994,7 +1998,7 @@ function fecharComentarioModal() {
     
     await withSpinner(async () => {
         try {
-            const response = await fetch(`http://localhost:3000/api/arquivos/${arquivoComentarioAtual}/comentario`, {
+            const response = await fetch(`${API_URL}/api/arquivos/${arquivoComentarioAtual}/comentario`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ comentario })
@@ -2027,7 +2031,7 @@ function fecharComentarioModal() {
 
     async function downloadPasta(pastaId, pastaNome) {
         try {
-            const response = await fetch(`http://localhost:3000/api/pastas/${pastaId}/download?usuario_id=${usuario.id}`);
+            const response = await fetch(`${API_URL}/api/pastas/${pastaId}/download?usuario_id=${usuario.id}`);
             
             if (!response.ok) {
                 const error = await response.json();
@@ -2060,7 +2064,7 @@ function fecharComentarioModal() {
 
     await withSpinner(async () => {
         try {
-            const response = await fetch(`http://localhost:3000/api/arquivos/${arquivoId}`, {
+            const response = await fetch(`${API_URL}/api/arquivos/${arquivoId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json'
@@ -2104,7 +2108,7 @@ function fecharComentarioModal() {
 
     async function carregarFavoritos() {
         try {
-            const response = await fetch(`http://localhost:3000/api/arquivos/${usuario.id}`);
+            const response = await fetch(`${API_URL}/api/arquivos/${usuario.id}`);
             if (!response.ok) {
                 throw new Error('Erro ao carregar arquivos');
             }
@@ -2343,7 +2347,7 @@ function abrirModalUsuario() {
     
     await withSpinner(async () => {
         try {
-            const response = await fetch(`http://localhost:3000/api/usuarios/${usuario.id}`, {
+            const response = await fetch(`${API_URL}/api/usuarios/${usuario.id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
