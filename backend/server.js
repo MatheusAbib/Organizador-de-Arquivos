@@ -9,6 +9,10 @@ const archiver = require('archiver');
 require('dotenv').config();
 
 const app = express();
+const PORT = process.env.PORT || 3000;
+const HOST = '0.0.0.0';
+
+
 
 app.use(cors());
 app.use(express.json());
@@ -855,7 +859,6 @@ app.delete('/api/admin/usuarios/:id', async (req, res) => {
 });
 
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+app.listen(PORT, HOST, () => {
     console.log(`✅ Servidor rodando na porta ${PORT}`);
 });
