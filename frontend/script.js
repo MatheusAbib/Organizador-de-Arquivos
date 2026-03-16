@@ -1063,7 +1063,7 @@ async function criarPasta(pastaPaiId = null) {
             }
 
             try {
-                const response = await fetch('${API_URL}/api/upload', {
+                const response = await fetch(`${API_URL}/api/upload`, {
                     method: 'POST',
                     body: formData
                 });
@@ -1245,7 +1245,7 @@ async function confirmarCompartilhar() {
             
             console.log('Enviando dados:', dados);
             
-            const response = await fetch('${API_URL}/api/compartilhar', {
+            const response = await fetch(`${API_URL}/api/compartilhar`, {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json'
