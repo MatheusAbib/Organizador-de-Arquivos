@@ -541,38 +541,59 @@ app.get('/api/pastas/:usuario_id', async (req, res) => {
 
 app.get('/api/pasta/:pasta_id/conteudo', async (req, res) => {
     try {
-        const pasta_id = req.params.pasta_id === 'root' ? null : req.params.pasta_id;
+        const pasta_id = req.params.pasta_id;
         const usuario_id = req.query.usuario_id;
         
         console.log('Buscando conteúdo da pasta:', { pasta_id, usuario_id });
         
-        let temAcesso = false;
-        
-        const [pastaPropria] = await db.promise().query('SELECT * FROM pastas WHERE id = ? AND usuario_id = ?', [pasta_id, usuario_id]);
+        if (!pasta_id || pasta_id === 'null' || pasta_id === 'undefined') {
+            return res.status(400).json({ error: 'ID da pasta inválido' });
+        }
+
+        const [pastaPropria] = await db.promise().query(
+            'SELECT * FROM pastas WHERE id = ? AND usuario_id = ?', 
+            [pasta_id, usuario_id]
+        );
         
         if (pastaPropria.length > 0) {
-            temAcesso = true;
             console.log('Acesso à pasta própria');
-        } else {
-            const [pastaCompartilhada] = await db.promise().query('SELECT * FROM compartilhamentos WHERE pasta_id = ? AND usuario_compartilhado_id = ?', [pasta_id, usuario_id]);
+            const [pastas] = await db.promise().query(
+                'SELECT * FROM pastas WHERE pasta_pai_id = ? ORDER BY nome', 
+                [pasta_id]
+            );
+            const [arquivos] = await db.promise().query(
+                'SELECT * FROM arquivos WHERE pasta_id = ? ORDER BY data_upload DESC', 
+                [pasta_id]
+            );
             
-            if (pastaCompartilhada.length > 0) {
-                temAcesso = true;
-                console.log('Acesso à pasta compartilhada');
-            }
+            return res.json({ pastas, arquivos });
         }
         
-        if (!temAcesso) {
-            console.log('Acesso negado à pasta');
-            return res.status(403).json({ error: 'Acesso negado' });
+        const [pastaCompartilhada] = await db.promise().query(`
+            SELECT c.*, p.* 
+            FROM compartilhamentos c
+            JOIN pastas p ON c.pasta_id = p.id
+            WHERE c.pasta_id = ? AND c.usuario_compartilhado_id = ?
+        `, [pasta_id, usuario_id]);
+        
+        if (pastaCompartilhada.length > 0) {
+            console.log('Acesso à pasta compartilhada');
+            
+            const [pastas] = await db.promise().query(
+                'SELECT * FROM pastas WHERE pasta_pai_id = ? ORDER BY nome', 
+                [pasta_id]
+            );
+            const [arquivos] = await db.promise().query(
+                'SELECT * FROM arquivos WHERE pasta_id = ? ORDER BY data_upload DESC', 
+                [pasta_id]
+            );
+            
+            return res.json({ pastas, arquivos });
         }
         
-        const [pastas] = await db.promise().query('SELECT * FROM pastas WHERE pasta_pai_id = ? ORDER BY nome', [pasta_id]);
-        const [arquivos] = await db.promise().query('SELECT * FROM arquivos WHERE pasta_id = ? ORDER BY data_upload DESC', [pasta_id]);
+        console.log('Acesso negado à pasta');
+        return res.status(403).json({ error: 'Acesso negado' });
         
-        console.log(`Encontradas ${pastas.length} subpastas e ${arquivos.length} arquivos`);
-        
-        res.json({ pastas, arquivos });
     } catch (error) {
         console.error('Erro ao buscar conteúdo:', error);
         res.status(500).json({ error: 'Erro ao buscar conteúdo' });

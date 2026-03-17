@@ -1437,7 +1437,7 @@
         }
 
         .modal-body {
-            padding: 2rem;
+            padding: 2.3rem;
             overflow-y: auto;
             max-height: calc(85vh - 80px);
             background: var(--card-bg);
@@ -1559,6 +1559,7 @@
             display: flex;
             align-items: center;
             padding: 0.8rem;
+            margin-bottom: 5px;
             border-bottom: 1px solid var(--border-color);
             cursor: pointer;
             transition: background 0.3s;
