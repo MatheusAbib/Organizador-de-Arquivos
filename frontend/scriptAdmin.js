@@ -1,10 +1,15 @@
-        const usuario = JSON.parse(localStorage.getItem('usuario'));
-        if (!usuario || usuario.tipo !== 'admin') {
-            window.location.href = 'index.html';
-        } else {
-            document.getElementById('userName').textContent = usuario.nome;
-        }
-        
+  const usuario = JSON.parse(localStorage.getItem('usuario'));
+    if (!usuario || usuario.tipo !== 'admin') {
+        window.location.href = 'index.html';
+    } else {
+        document.getElementById('userName').textContent = usuario.nome;
+    }
+
+    const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        ? 'http://localhost:3000'  
+        : 'https://app-fdeaa58d-ec6e-435f-9f32-f3ea2f463701.cleverapps.io'; 
+    
+
         let usuarios = [];
         let usuarioSelecionado = null;
         let paginaAtual = 1;
@@ -14,9 +19,9 @@
         async function carregarDados() {
             try {
                 const [usuariosData, arquivos, pastas] = await Promise.all([
-                    fetch('http://localhost:3000/api/admin/usuarios').then(r => r.json()),
-                    fetch('http://localhost:3000/api/admin/arquivos').then(r => r.json()),
-                    fetch('http://localhost:3000/api/admin/pastas').then(r => r.json())
+                    fetch(`${API_URL}/api/admin/usuarios`).then(r => r.json()),
+                    fetch(`${API_URL}/api/admin/arquivos`).then(r => r.json()),
+                    fetch(`${API_URL}/api/admin/pastas`).then(r => r.json())
                 ]);
                 
                 usuarios = usuariosData;
@@ -187,7 +192,7 @@
         async function tornarAdmin(id) {
             mostrarConfirmacao('Tornar Administrador', 'Tornar este usuário administrador?', async () => {
                 try {
-                    const response = await fetch(`http://localhost:3000/api/admin/usuarios/${id}/tornar-admin`, {
+                    const response = await fetch(`${API_URL}/api/admin/usuarios/${id}/tornar-admin`, {
                         method: 'PUT'
                     });
                     
@@ -208,7 +213,7 @@
         async function deletarUsuario(id) {
             mostrarConfirmacao('Excluir Usuário', 'Tem certeza que deseja excluir este usuário?', async () => {
                 try {
-                    const response = await fetch(`http://localhost:3000/api/admin/usuarios/${id}`, {
+                    const response = await fetch(`${API_URL}/api/admin/usuarios/${id}`, {
                         method: 'DELETE'
                     });
                     
@@ -318,7 +323,7 @@
             }
             
             try {
-                const response = await fetch(`http://localhost:3000/api/admin/usuarios/${usuarioSelecionado.id}`, {
+                const response = await fetch(`${API_URL}/api/admin/usuarios/${usuarioSelecionado.id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -371,7 +376,7 @@
             }
             
             try {
-                const response = await fetch(`http://localhost:3000/api/admin/usuarios/${usuarioSelecionado.id}/inativar`, {
+                const response = await fetch(`${API_URL}/api/admin/usuarios/${usuarioSelecionado.id}/inativar`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ justificativa })
@@ -393,7 +398,7 @@
 
         async function reativarUsuario(id) {
             try {
-                const response = await fetch(`http://localhost:3000/api/admin/usuarios/${id}/reativar`, {
+                const response = await fetch(`${API_URL}/api/admin/usuarios/${id}/reativar`, {
                     method: 'PUT'
                 });
                 
