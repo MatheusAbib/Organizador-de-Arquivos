@@ -1358,46 +1358,54 @@ async function confirmarCompartilhar() {
         aplicarFiltroEBusca();
     }
 
-    function aplicarFiltroEBusca() {
-        const container = document.getElementById('arquivosContainer');
-        
-        if (!todosArquivos || todosArquivos.length === 0) {
-            container.innerHTML = '<div class="arquivos-grid"><div class="loading">Carregando arquivos...</div></div>';
-            return;
-        }
-        let arquivosFiltrados = [...todosArquivos];
-        
-        if (filtroAtual !== 'todos') {
-            arquivosFiltrados = arquivosFiltrados.filter(item => item.tipo_arquivo === filtroAtual);
-        }
-        
-        if (termoBusca) {
-            arquivosFiltrados = arquivosFiltrados.filter(item => 
-                item.nome_original.toLowerCase().includes(termoBusca)
-            );
-        }
-
-        totalArquivosFiltrados = arquivosFiltrados.length;
-        
-        let conteudoHtml = '';
-        
-        if (totalArquivosFiltrados === 0) {
-            conteudoHtml = '<div class="empty-state">Nenhum arquivo encontrado</div>';
-        } else {
-            const inicio = (paginaAtual - 1) * itensPorPagina;
-            const fim = inicio + itensPorPagina;
-            const arquivosPaginados = arquivosFiltrados.slice(inicio, fim);
-            
-            if (visualizacaoAtual === 'grid') {
-                conteudoHtml = `<div class="arquivos-grid">${renderizarArquivosGrid(arquivosPaginados)}</div>`;
-            } else {
-                conteudoHtml = `<div class="arquivos-lista">${renderizarArquivosLista(arquivosPaginados)}</div>`;
-            }
-        }
-        
-        conteudoHtml += renderizarPaginacao();
-        container.innerHTML = conteudoHtml;
+function aplicarFiltroEBusca() {
+    const container = document.getElementById('arquivosContainer');
+    
+    if (!todosArquivos) {
+        container.innerHTML = '<div class="arquivos-grid"><div class="loading">Carregando arquivos...</div></div>';
+        return;
     }
+    
+    let arquivosFiltrados = [...todosArquivos];
+    
+    if (filtroAtual !== 'todos') {
+        arquivosFiltrados = arquivosFiltrados.filter(item => item.tipo_arquivo === filtroAtual);
+    }
+    
+    if (termoBusca) {
+        arquivosFiltrados = arquivosFiltrados.filter(item => 
+            item.nome_original.toLowerCase().includes(termoBusca)
+        );
+    }
+
+    totalArquivosFiltrados = arquivosFiltrados.length;
+    
+    let conteudoHtml = '';
+    
+    if (totalArquivosFiltrados === 0) {
+        let mensagemVazio = 'Nenhum arquivo encontrado';
+        if (filtroAtual !== 'todos') {
+            mensagemVazio = `Nenhum arquivo do tipo ${filtroAtual} encontrado`;
+        }
+        if (termoBusca) {
+            mensagemVazio = `Nenhum arquivo encontrado para "${termoBusca}"`;
+        }
+        conteudoHtml = `<div class="empty-state">${mensagemVazio}</div>`;
+    } else {
+        const inicio = (paginaAtual - 1) * itensPorPagina;
+        const fim = inicio + itensPorPagina;
+        const arquivosPaginados = arquivosFiltrados.slice(inicio, fim);
+        
+        if (visualizacaoAtual === 'grid') {
+            conteudoHtml = `<div class="arquivos-grid">${renderizarArquivosGrid(arquivosPaginados)}</div>`;
+        } else {
+            conteudoHtml = `<div class="arquivos-lista">${renderizarArquivosLista(arquivosPaginados)}</div>`;
+        }
+    }
+    
+    conteudoHtml += renderizarPaginacao();
+    container.innerHTML = conteudoHtml;
+}
 
     function renderizarPaginacao() {
         const totalPaginas = Math.max(1, Math.ceil(totalArquivosFiltrados / itensPorPagina));
