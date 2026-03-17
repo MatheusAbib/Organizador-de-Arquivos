@@ -1365,7 +1365,18 @@ function aplicarFiltroEBusca() {
     }
     
     if (todosArquivos.length === 0) {
-        container.innerHTML = '<div class="empty-state">Nenhum arquivo encontrado</div>';
+        container.innerHTML = `
+            <div class="empty-state-container">
+                <div class="empty-state-icon">
+                    <i class="fas fa-folder-open"></i>
+                </div>
+                <h3 class="empty-state-title">Nenhum arquivo encontrado</h3>
+                <p class="empty-state-description">
+                    Arraste arquivos para a área de <br> upload para começar
+                </p>
+
+            </div>
+        `;
         return;
     }
     
@@ -1386,14 +1397,43 @@ function aplicarFiltroEBusca() {
     let conteudoHtml = '';
     
     if (totalArquivosFiltrados === 0) {
+        let iconeVazio = 'fa-folder-open';
         let mensagemVazio = 'Nenhum arquivo encontrado';
+        
+        const iconesPorTipo = {
+            'pdf': 'fa-file-pdf',
+            'imagem': 'fa-file-image',
+            'word': 'fa-file-word',
+            'excel': 'fa-file-excel',
+            'powerpoint': 'fa-file-powerpoint',
+            'video': 'fa-file-video',
+            'texto': 'fa-file-alt'
+        };
+        
         if (filtroAtual !== 'todos') {
+            iconeVazio = iconesPorTipo[filtroAtual] || 'fa-file';
             mensagemVazio = `Nenhum arquivo do tipo ${filtroAtual} encontrado`;
         }
+        
         if (termoBusca) {
+            iconeVazio = 'fa-search';
             mensagemVazio = `Nenhum arquivo encontrado para "${termoBusca}"`;
         }
-        conteudoHtml = `<div class="empty-state">${mensagemVazio}</div>`;
+        
+        conteudoHtml = `
+            <div class="empty-state-container">
+                <div class="empty-state-icon">
+                    <i class="fas ${iconeVazio}"></i>
+                </div>
+                <h3 class="empty-state-title">${mensagemVazio}</h3>
+                <p class="empty-state-description">
+                    Tente buscar com outros termos ou faça upload de novos arquivos
+                </p>
+                <button class="empty-state-btn" onclick="document.getElementById('fileInput').click()">
+                    <i class="fas fa-cloud-upload-alt"></i> Enviar arquivos
+                </button>
+            </div>
+        `;
     } else {
         const inicio = (paginaAtual - 1) * itensPorPagina;
         const fim = inicio + itensPorPagina;
