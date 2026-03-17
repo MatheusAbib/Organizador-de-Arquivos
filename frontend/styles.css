@@ -218,7 +218,8 @@
         }
 
         .nova-pasta-btn {
-            background: #48bb78;
+            /* background: #48bb78; */
+            background: #bb4848;
             color: white;
             border: none;
             padding: 0.5rem 1rem;
