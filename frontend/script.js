@@ -33,6 +33,8 @@
 
     let dadosCarregados = false;
 
+    let manterModalAberto = false;
+
 async function withSpinner(action, mensagem = 'Processando...') {
     mostrarSpinner(mensagem);
     try {
@@ -360,7 +362,7 @@ function renderizarCompartilhadosPorMim() {
                 <button class="compartilhado-action-btn edit" onclick="editarPermissaoCompartilhamento(${item.pasta_id}, ${item.usuario_id}, '${item.permissao}')" title="Editar permissão">
                     <i class="fas fa-edit"></i>
                 </button>
-                <button class="compartilhado-action-btn delete" onclick="removerCompartilhamentoPorMim(${item.id})" title="Remover compartilhamento">
+                <button class="compartilhado-action-btn delete" onclick="removerCompartilhamento(${item.id})" title="Remover compartilhamento">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -418,8 +420,10 @@ async function confirmarEditarPermissao() {
     }, 'Atualizando permissão...');
 }
 
-async function removerCompartilhamentoPorMim(compartilhamentoId) {
-    mostrarConfirmacao('Remover Compartilhamento', 'Deseja realmente remover este compartilhamento?', async () => {
+async function removerCompartilhamento(compartilhamentoId) {
+    console.log('Tentando remover compartilhamento ID:', compartilhamentoId); 
+    
+    mostrarConfirmacao('Remover Compartilhamento', 'Remover esta pasta compartilhada da sua lista? Isso não exclui a pasta original.', async () => {
         await withSpinner(async () => {
             try {
                 const response = await fetch(`${API_URL}/api/compartilhamentos/${compartilhamentoId}`, {
@@ -427,10 +431,16 @@ async function removerCompartilhamentoPorMim(compartilhamentoId) {
                 });
                 
                 if (response.ok) {
-                    mostrarNotificacao('Compartilhamento removido com sucesso');
-                    await carregarCompartilhadosPorMim();
+                    compartilhados = compartilhados.filter(c => c.compartilhamento_id !== compartilhamentoId);
+                    renderizarCompartilhados();
+                    
+                    compartilhadosPorMim = compartilhadosPorMim.filter(c => c.id !== compartilhamentoId);
+                    renderizarCompartilhadosPorMim();
+                    
+                    mostrarNotificacao('Pasta removida da sua lista');
                 } else {
-                    mostrarAlerta('Erro', 'Erro ao remover compartilhamento');
+                    const data = await response.json();
+                    mostrarAlerta('Erro', data.error || 'Erro ao remover compartilhamento');
                 }
             } catch (error) {
                 console.error('Erro ao remover compartilhamento:', error);
@@ -439,7 +449,6 @@ async function removerCompartilhamentoPorMim(compartilhamentoId) {
         }, 'Removendo compartilhamento...');
     });
 }
-
     function renderizarPastas() {
         const pastasRaiz = todasPastas.filter(p => p.pasta_pai_id === null);
         const lista = document.getElementById('pastasList');
@@ -546,62 +555,68 @@ async function removerCompartilhamentoPorMim(compartilhamentoId) {
         salvarEstadoPastas();
         renderizarPastas();
     }
-
-    async function removerCompartilhamento(pastaId) {
-    mostrarConfirmacao('Remover Compartilhamento', 'Remover esta pasta compartilhada da sua lista? Isso não exclui a pasta original.', async () => {
-        await withSpinner(async () => {
-            try {
-                const response = await fetch(`${API_URL}/api/compartilhamentos/${pastaId}?usuario_id=${usuario.id}`, {
-                    method: 'DELETE'
-                });
-                
-                if (response.ok) {
-                    await carregarCompartilhados();
-                    mostrarNotificacao('Pasta removida da sua lista');
-                } else {
-                    const data = await response.json();
-                    mostrarAlerta('Erro', data.error || 'Erro ao remover compartilhamento');
-                }
-            } catch (error) {
-                console.error('Erro ao remover compartilhamento:', error);
-                mostrarAlerta('Erro', 'Erro ao remover compartilhamento');
-            }
-        }, 'Removendo compartilhamento...');
-    });
-}
-
-    function renderizarCompartilhados() {
-        const lista = document.getElementById('compartilhadosList');
-        
-        if (compartilhados.length === 0) {
-            lista.innerHTML = '<li style="color: #999; padding: 0.5rem;">Nenhuma pasta compartilhada com você</li>';
-            return;
-        }
-        
-        lista.innerHTML = compartilhados.map(pasta => `
-            <li class="pasta-item" style="display: flex; align-items: center; justify-content: space-between; cursor: pointer;">
-                <div style="display: flex; align-items: center; gap: 0.5rem; flex: 1;" onclick="abrirModalPasta(${pasta.id}, true)">
-                    <span><i class="fas fa-share-alt" style="color: #b88b4a;"></i></span>
-                    <span>${pasta.nome}</span>
-                    <small style="color: #999; font-size: 0.7rem;">(${pasta.permissao})</small>
-                    <small style="color: #999; font-size: 0.7rem;">de ${pasta.proprietario_email}</small>
-                </div>
-                <div class="pasta-actions" onclick="event.stopPropagation()">
-                    <button class="pasta-action-btn" onclick="removerCompartilhamento(${pasta.id})" title="Remover da minha lista"><i class="fas fa-times"></i></button>
-                </div>
-            </li>
-        `).join('');
+function renderizarCompartilhados() {
+    const lista = document.getElementById('compartilhadosList');
+    
+    if (compartilhados.length === 0) {
+        lista.innerHTML = '<li style="color: #999; padding: 0.5rem;">Nenhuma pasta compartilhada com você</li>';
+        return;
     }
+    
+    lista.innerHTML = compartilhados.map(pasta => `
+        <li class="compartilhado-item">
+            <div class="compartilhado-info" onclick="abrirModalPasta(${pasta.id}, true)">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span><i class="fas fa-folder" style="color: #b88b4a;"></i></span>
+                    <span class="compartilhado-nome">${pasta.nome}</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                    <span class="compartilhado-email"><i class="fas fa-user"></i> ${pasta.proprietario_email}</span>
+                    <span class="compartilhado-permissao">${pasta.permissao}</span>
+                </div>
+            </div>
+            <div class="compartilhado-actions">
+                <button class="compartilhado-action-btn delete" onclick="removerCompartilhamento(${pasta.compartilhamento_id})" title="Remover da minha lista">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </li>
+    `).join('');
+}
 
 let historicoPastas = [];
 async function abrirModalPasta(pastaId, isCompartilhado = false) {
+    if (manterModalAberto) {
+        manterModalAberto = false;
+        await atualizarConteudoModal(pastaId);
+        return;
+    }
+    
     console.log('Abrindo modal da pasta ID:', pastaId);
     
     pastaModalAtual = parseInt(pastaId);
     
     let pasta = todasPastas.find(p => p.id === pastaModalAtual);
+    let permissao = 'proprietario';
+    
     if (!pasta) {
         pasta = compartilhados.find(c => c.id === pastaModalAtual);
+        if (pasta) {
+            permissao = pasta.permissao;
+        }
+    }
+    
+    if (!pasta) {
+        try {
+            const response = await fetch(`${API_URL}/api/pasta/${pastaModalAtual}/info?usuario_id=${usuario.id}`);
+            if (response.ok) {
+                const data = await response.json();
+                pasta = data.pasta;
+                permissao = data.permissao;
+            }
+        } catch (error) {
+            console.error('Erro ao buscar info da pasta:', error);
+        }
     }
     
     document.getElementById('pastaModalTitle').innerHTML = `<i class="fas fa-folder"></i> ${pasta ? pasta.nome : 'Pasta'}`;
@@ -615,9 +630,6 @@ async function abrirModalPasta(pastaId, isCompartilhado = false) {
     } else {
         btnVoltar.style.display = 'none';
     }
-    
-    const pastaCompartilhada = compartilhados.find(c => c.id === pastaModalAtual);
-    const permissao = pastaCompartilhada ? pastaCompartilhada.permissao : 'proprietario';
     
     const acoesBtn = document.querySelector('.pasta-actions-dropdown');
     const uploadBtn = document.querySelector('.modal-header-btn[onclick="uploadParaPasta()"]');
@@ -654,6 +666,34 @@ async function abrirModalPasta(pastaId, isCompartilhado = false) {
             document.getElementById('pastaModalBody').innerHTML = '<div class="empty-state">Erro ao carregar conteúdo</div>';
         }
     }, 'Carregando pasta...');
+}
+
+async function atualizarConteudoModal(pastaId) {
+    console.log('7. DENTRO de atualizarConteudoModal - pastaId:', pastaId);
+    try {
+        const response = await fetch(`${API_URL}/api/pasta/${pastaId}/conteudo?usuario_id=${usuario.id}`);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const dados = await response.json();
+        
+        let permissao = 'proprietario';
+        const pasta = todasPastas.find(p => p.id === pastaId);
+        if (!pasta) {
+            const comp = compartilhados.find(c => c.id === pastaId);
+            if (comp) permissao = comp.permissao;
+        }
+        
+        renderizarConteudoPasta(dados.pastas || [], dados.arquivos || [], permissao);
+        console.log('8. FIM de atualizarConteudoModal - SUCESSO');
+    } catch (error) {
+        console.error('Erro ao atualizar modal:', error);
+        // Mesmo com erro, mantém o modal aberto mostrando erro
+        document.getElementById('pastaModalBody').innerHTML = 
+            '<div class="empty-state">Erro ao atualizar conteúdo. Tente novamente.</div>';
+    }
 }
 
 function voltarPastaAnterior() {
@@ -734,11 +774,15 @@ function renderizarConteudoPasta(subPastas, arquivos, permissao = 'proprietario'
                     <button class="content-action-btn" onclick="abrirArquivo('${arquivo.nome_arquivo}', '${arquivo.tipo_arquivo}')" title="Abrir"><i class="fas fa-eye"></i></button>
                     <button class="content-action-btn" onclick="baixarArquivo('${arquivo.nome_arquivo}')" title="Baixar"><i class="fas fa-download"></i></button>
                     <button class="content-action-btn ${arquivo.comentario ? 'active' : ''}" onclick="event.stopPropagation(); abrirComentarioModal(${arquivo.id})" title="${arquivo.comentario ? 'Editar comentário' : 'Adicionar comentário'}"><i class="fas fa-comment"></i></button>
+                    
+                    <!-- AÇÕES DE EDIÇÃO: SÓ APARECEM SE FOR EDITAR OU PROPRIETÁRIO -->
                     ${permissao === 'editar' || permissao === 'proprietario' ? `
                         <button class="content-action-btn" onclick="iniciarEdicaoArquivo(${arquivo.id}, '${arquivo.nome_original}')" title="Renomear"><i class="fas fa-edit"></i></button>
                         <button class="content-action-btn" onclick="abrirMoverModal(${arquivo.id})" title="Mover para outra pasta"><i class="fas fa-folder-open"></i></button>
                         <button class="content-action-btn" onclick="removerDaPasta(${arquivo.id})" title="Remover da pasta"><i class="fas fa-arrow-left"></i></button>
                     ` : ''}
+                    
+                    <!-- EXCLUIR: SÓ APARECE SE FOR PROPRIETÁRIO -->
                     ${permissao === 'proprietario' ? `
                         <button class="content-action-btn delete" onclick="deletarArquivo(${arquivo.id})" title="Excluir"><i class="fas fa-trash"></i></button>
                     ` : ''}
@@ -752,6 +796,8 @@ function renderizarConteudoPasta(subPastas, arquivos, permissao = 'proprietario'
 }
 
 async function removerDaPasta(arquivoId) {
+    manterModalAberto = true;
+    
     mostrarConfirmacao('Remover da Pasta', 'Remover este arquivo da pasta? Ele voltará para a raiz.', async () => {
         await withSpinner(async () => {
             try {
@@ -764,7 +810,7 @@ async function removerDaPasta(arquivoId) {
                 if (response.ok) {
                     await carregarArquivos();
                     if (pastaModalAtual) {
-                        await abrirModalPasta(pastaModalAtual);
+                        await atualizarConteudoModal(pastaModalAtual); 
                     }
                     mostrarNotificacao('Arquivo removido da pasta');
                 } else {
@@ -773,6 +819,8 @@ async function removerDaPasta(arquivoId) {
             } catch (error) {
                 console.error('Erro ao remover da pasta:', error);
                 mostrarAlerta('Erro', 'Erro ao remover arquivo da pasta');
+            } finally {
+                manterModalAberto = false;
             }
         }, 'Removendo arquivo...');
     });
@@ -786,6 +834,13 @@ async function removerDaPasta(arquivoId) {
     }
 
 function fecharModalPasta() {
+    console.log('9. TENTOU FECHAR - manterModalAberto =', manterModalAberto);
+    if (manterModalAberto) {
+        console.log('10. BLOQUEADO - não vai fechar');
+        return; 
+    }
+    
+    console.log('11. VAI FECHAR MESMO');
     document.getElementById('pastaModal').classList.remove('active');
     pastaModalAtual = null;
     historicoPastas = [];
@@ -1784,6 +1839,10 @@ function aplicarFiltroEBusca() {
     }).join('');
 }
 async function deletarArquivo(id) {
+    console.log('1. ANTES - manterModalAberto =', manterModalAberto);
+    manterModalAberto = true;
+    console.log('2. DEPOIS - manterModalAberto =', manterModalAberto);
+    
     mostrarConfirmacao('Excluir Arquivo', 'Tem certeza que deseja deletar este arquivo?', async () => {
         await withSpinner(async () => {
             try {
@@ -1805,24 +1864,33 @@ async function deletarArquivo(id) {
                     }
                     
                     if (pastaModalAtual) {
-                        await abrirModalPasta(pastaModalAtual);
+                        console.log('3. ANTES de atualizarConteudoModal');
+                        await atualizarConteudoModal(pastaModalAtual);
+                        console.log('4. DEPOIS de atualizarConteudoModal');
+                    } else {
+                        aplicarFiltroEBusca();
                     }
-                    
-                    aplicarFiltroEBusca();
                     
                     mostrarNotificacao('Arquivo excluído com sucesso!');
                 } else {
-                    mostrarAlerta('Erro', 'Erro ao deletar arquivo');
+                    const errorData = await response.json();
+                    console.error('Erro na resposta:', errorData);
+                    mostrarAlerta('Erro', errorData.error || 'Erro ao deletar arquivo');
                 }
             } catch (error) {
                 console.error('Erro ao deletar:', error);
-                mostrarAlerta('Erro', 'Erro ao deletar arquivo');
+                mostrarAlerta('Erro', 'Erro ao deletar arquivo: ' + error.message);
+            } finally {
+                console.log('5. FINAL - manterModalAberto ANTES =', manterModalAberto);
+                manterModalAberto = false;
+                console.log('6. FINAL - manterModalAberto DEPOIS =', manterModalAberto);
             }
         }, 'Excluindo arquivo...');
     });
 }
-
 async function favoritarArquivo(id, favorito) {
+    manterModalAberto = true;
+    
     await withSpinner(async () => {
         try {
             const response = await fetch(`${API_URL}/api/arquivos/${id}/favoritar`, {
@@ -1842,18 +1910,18 @@ async function favoritarArquivo(id, favorito) {
                 
                 if (favoritosModalAberto) {
                     await carregarFavoritos();
+                } else if (pastaModalAtual) {
+                    await atualizarConteudoModal(pastaModalAtual); 
                 } else {
                     aplicarFiltroEBusca();
-                }
-                
-                if (pastaModalAtual) {
-                    await abrirModalPasta(pastaModalAtual);
                 }
                 
                 mostrarNotificacao(favorito ? 'Arquivo adicionado aos favoritos!' : 'Arquivo removido dos favoritos!');
             }
         } catch (error) {
             console.error('Erro ao favoritar:', error);
+        } finally {
+            manterModalAberto = false;
         }
     }, favorito ? 'Adicionando aos favoritos...' : 'Removendo dos favoritos...');
 }
@@ -2064,9 +2132,10 @@ function fecharComentarioModal() {
     toggleBodyScroll(false);
 }
 
-      async function salvarComentario() {
+    async function salvarComentario() {
     if (!arquivoComentarioAtual) return;
     
+    manterModalAberto = true;
     const comentario = document.getElementById('comentarioTextarea').value;
     
     await withSpinner(async () => {
@@ -2086,7 +2155,7 @@ function fecharComentarioModal() {
                 fecharComentarioModal();
                 
                 if (pastaModalAtual) {
-                    await abrirModalPasta(pastaModalAtual);
+                    await atualizarConteudoModal(pastaModalAtual); // MUDOU AQUI
                 } else {
                     aplicarFiltroEBusca();
                 }
@@ -2098,18 +2167,22 @@ function fecharComentarioModal() {
         } catch (error) {
             console.error('Erro ao salvar comentário:', error);
             alert('Erro ao salvar comentário');
+        } finally {
+            manterModalAberto = false;
         }
     }, 'Salvando comentário...');
 }
 
-    async function downloadPasta(pastaId, pastaNome) {
+async function downloadPasta(pastaId, pastaNome) {
+    manterModalAberto = true; // IMPEDE o modal de fechar
+    
+    await withSpinner(async () => {
         try {
             const response = await fetch(`${API_URL}/api/pastas/${pastaId}/download?usuario_id=${usuario.id}`);
             
             if (!response.ok) {
                 const error = await response.json();
-                alert(error.error || 'Erro ao baixar pasta');
-                return;
+                throw new Error(error.error || 'Erro ao baixar pasta');
             }
             
             const blob = await response.blob();
@@ -2119,21 +2192,29 @@ function fecharComentarioModal() {
             a.download = `${pastaNome}.zip`;
             document.body.appendChild(a);
             a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
+            
+            setTimeout(() => {
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            }, 100);
             
             mostrarNotificacao('Download da pasta iniciado');
         } catch (error) {
             console.error('Erro ao baixar pasta:', error);
-            alert('Erro ao baixar pasta');
+            mostrarAlerta('Erro', error.message || 'Erro ao baixar pasta');
+        } finally {
+            manterModalAberto = false; 
         }
-    }
+    }, 'Preparando download...');
+}
 
   async function salvarEdicao(arquivoId, novoNome) {
     if (!novoNome.trim()) {
         mostrarAlerta('Erro', 'O nome do arquivo não pode estar vazio');
         return;
     }
+
+    manterModalAberto = true;
 
     await withSpinner(async () => {
         try {
@@ -2150,7 +2231,7 @@ function fecharComentarioModal() {
                 await carregarArquivos();
                 
                 if (pastaModalAtual) {
-                    await abrirModalPasta(pastaModalAtual);
+                    await atualizarConteudoModal(pastaModalAtual); // MUDOU AQUI!
                 }
                 
                 mostrarNotificacao('Arquivo renomeado com sucesso');
@@ -2160,6 +2241,8 @@ function fecharComentarioModal() {
         } catch (error) {
             console.error('Erro ao renomear:', error);
             alert('Erro ao renomear arquivo');
+        } finally {
+            manterModalAberto = false;
         }
     }, 'Renomeando arquivo...');
 }
@@ -2474,6 +2557,14 @@ function mostrarConfirmacao(titulo, mensagem, callback) {
     confirmCallback = callback;
     document.getElementById('confirmModal').classList.add('active');
     toggleBodyScroll(true);
+    
+    const confirmBtn = document.getElementById('confirmActionBtn');
+    confirmBtn.onclick = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        executarConfirmAction();
+        return false;
+    };
 }
 
 function fecharConfirmModal() {
@@ -2482,12 +2573,13 @@ function fecharConfirmModal() {
     toggleBodyScroll(false);
 }
 
-    function executarConfirmAction() {
-        if (confirmCallback) {
-            confirmCallback();
-        }
-        fecharConfirmModal();
+function executarConfirmAction() {
+    if (confirmCallback) {
+        confirmCallback();
     }
+    fecharConfirmModal();
+    return false; 
+}
 
 function mostrarPrompt(titulo, mensagem, valorPadrao = '', callback) {
     document.getElementById('promptTitle').innerHTML = `<i class="fas fa-pencil-alt"></i> ${titulo}`;
@@ -2747,3 +2839,5 @@ function mostrarTiposSuportados() {
             temaTexto.innerText = 'Escuro';
         }
     });
+
+    

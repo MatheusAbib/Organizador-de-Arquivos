@@ -430,39 +430,66 @@ app.get('/api/pastas/:id/download', async (req, res) => {
         
         const pasta = pastas[0];
         
-        const [compartilhado] = await db.promise().query('SELECT * FROM compartilhamentos WHERE pasta_id = ? AND usuario_compartilhado_id = ?', [pastaId, usuarioId]);
+        const [compartilhado] = await db.promise().query(
+            'SELECT * FROM compartilhamentos WHERE pasta_id = ? AND usuario_compartilhado_id = ?', 
+            [pastaId, usuarioId]
+        );
         
         if (pasta.usuario_id != usuarioId && compartilhado.length === 0) {
             return res.status(403).json({ error: 'Acesso negado' });
         }
         
-        const tempDir = path.join(__dirname, '../temp');
+        const tempDir = path.join(__dirname, 'temp');
         if (!fs.existsSync(tempDir)) {
             fs.mkdirSync(tempDir, { recursive: true });
         }
         
-        const tempZipPath = path.join(tempDir, `${Date.now()}_${pasta.nome}.zip`);
+        const tempZipPath = path.join(tempDir, `${Date.now()}_${pasta.nome.replace(/[^a-z0-9]/gi, '_')}.zip`);
         const output = fs.createWriteStream(tempZipPath);
-        const archive = archiver('zip', { zlib: { level: 9 } });
+        const archive = archiver('zip', { 
+            zlib: { level: 9 },
+            store: true 
+        });
         
         archive.on('error', (err) => {
             console.error('Archive error:', err);
-            res.status(500).json({ error: 'Erro ao criar ZIP' });
+            if (fs.existsSync(tempZipPath)) {
+                fs.unlinkSync(tempZipPath);
+            }
+            if (!res.headersSent) {
+                res.status(500).json({ error: 'Erro ao criar ZIP' });
+            }
         });
         
         archive.pipe(output);
         
         const adicionarConteudo = async (pastaIdAtual, caminhoAtual) => {
-            const [arquivos] = await db.promise().query('SELECT * FROM arquivos WHERE pasta_id = ?', [pastaIdAtual]);
+            const [arquivos] = await db.promise().query(
+                'SELECT * FROM arquivos WHERE pasta_id = ?', 
+                [pastaIdAtual]
+            );
             
             for (const arquivo of arquivos) {
-                const caminhoArquivo = path.join(__dirname, 'uploads', arquivo.nome_arquivo); 
+                const caminhoArquivo = path.join(__dirname, 'uploads', arquivo.nome_arquivo);
+                
                 if (fs.existsSync(caminhoArquivo)) {
-                    archive.file(caminhoArquivo, { name: path.join(caminhoAtual, arquivo.nome_original) });
+                    try {
+                        archive.file(caminhoArquivo, { 
+                            name: path.join(caminhoAtual, arquivo.nome_original)
+                        });
+                        console.log(`Adicionado: ${arquivo.nome_original}`);
+                    } catch (err) {
+                        console.error(`Erro ao adicionar arquivo ${arquivo.nome_original}:`, err);
+                    }
+                } else {
+                    console.log(`Arquivo não encontrado: ${caminhoArquivo}`);
                 }
             }
             
-            const [subPastas] = await db.promise().query('SELECT * FROM pastas WHERE pasta_pai_id = ?', [pastaIdAtual]);
+            const [subPastas] = await db.promise().query(
+                'SELECT * FROM pastas WHERE pasta_pai_id = ?', 
+                [pastaIdAtual]
+            );
             
             for (const subPasta of subPastas) {
                 const novoCaminho = path.join(caminhoAtual, subPasta.nome);
@@ -476,14 +503,12 @@ app.get('/api/pastas/:id/download', async (req, res) => {
         await archive.finalize();
         
         output.on('close', () => {
-            res.setHeader('Content-Type', 'application/octet-stream');
-            res.setHeader('Content-Disposition', `attachment; filename="${pasta.nome}.bin"`);
+            console.log(`ZIP criado: ${tempZipPath} (${archive.pointer()} bytes)`);
+            
+            res.setHeader('Content-Type', 'application/zip');
+            res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(pasta.nome)}.zip"`);
             res.setHeader('Content-Length', fs.statSync(tempZipPath).size);
-            res.setHeader('Cache-Control', 'public, max-age=0');
-            res.setHeader('Pragma', 'public');
-            res.setHeader('Expires', '0');
-            res.setHeader('Content-Transfer-Encoding', 'binary');
-            res.setHeader('X-Content-Type-Options', 'nosniff');
+            res.setHeader('Cache-Control', 'no-cache');
             
             const fileStream = fs.createReadStream(tempZipPath);
             fileStream.pipe(res);
@@ -491,14 +516,22 @@ app.get('/api/pastas/:id/download', async (req, res) => {
             fileStream.on('end', () => {
                 fs.unlink(tempZipPath, (err) => {
                     if (err) console.error('Erro ao remover temp:', err);
+                    else console.log('Arquivo temporário removido');
                 });
+            });
+            
+            fileStream.on('error', (err) => {
+                console.error('Erro ao enviar arquivo:', err);
+                if (!res.headersSent) {
+                    res.status(500).json({ error: 'Erro ao enviar arquivo' });
+                }
             });
         });
         
     } catch (error) {
         console.error('Erro ao baixar pasta:', error);
         if (!res.headersSent) {
-            res.status(500).json({ error: 'Erro ao baixar pasta' });
+            res.status(500).json({ error: 'Erro ao baixar pasta: ' + error.message });
         }
     }
 });
@@ -526,6 +559,52 @@ app.post('/api/pastas', async (req, res) => {
     }
 });
 
+
+app.get('/api/pasta/:pasta_id/info', async (req, res) => {
+    try {
+        const pasta_id = req.params.pasta_id;
+        const usuario_id = req.query.usuario_id;
+        
+        const [pastas] = await db.promise().query(
+            'SELECT * FROM pastas WHERE id = ?',
+            [pasta_id]
+        );
+        
+        if (pastas.length === 0) {
+            return res.status(404).json({ error: 'Pasta não encontrada' });
+        }
+        
+        const pasta = pastas[0];
+        let permissao = 'proprietario';
+        
+        if (pasta.usuario_id != usuario_id) {
+            const [compartilhamentos] = await db.promise().query(`
+                SELECT c.permissao 
+                FROM compartilhamentos c
+                JOIN pastas p ON c.pasta_id = p.id
+                WHERE p.id = ? AND c.usuario_compartilhado_id = ?
+                UNION
+                SELECT c.permissao 
+                FROM compartilhamentos c
+                JOIN pastas p ON c.pasta_id = p.pasta_pai_id
+                WHERE p.id = ? AND c.usuario_compartilhado_id = ?
+            `, [pasta_id, usuario_id, pasta_id, usuario_id]);
+            
+            if (compartilhamentos.length > 0) {
+                permissao = compartilhamentos[0].permissao;
+            } else {
+                return res.status(403).json({ error: 'Acesso negado' });
+            }
+        }
+        
+        res.json({ pasta, permissao });
+        
+    } catch (error) {
+        console.error('Erro ao buscar info da pasta:', error);
+        res.status(500).json({ error: 'Erro ao buscar informações' });
+    }
+});
+
 app.get('/api/pastas/:usuario_id', async (req, res) => {
     try {
         const [pastas] = await db.promise().query(
@@ -545,10 +624,6 @@ app.get('/api/pasta/:pasta_id/conteudo', async (req, res) => {
         const usuario_id = req.query.usuario_id;
         
         console.log('Buscando conteúdo da pasta:', { pasta_id, usuario_id });
-        
-        if (!pasta_id || pasta_id === 'null' || pasta_id === 'undefined') {
-            return res.status(400).json({ error: 'ID da pasta inválido' });
-        }
 
         const [pastaPropria] = await db.promise().query(
             'SELECT * FROM pastas WHERE id = ? AND usuario_id = ?', 
@@ -565,20 +640,16 @@ app.get('/api/pasta/:pasta_id/conteudo', async (req, res) => {
                 'SELECT * FROM arquivos WHERE pasta_id = ? ORDER BY data_upload DESC', 
                 [pasta_id]
             );
-            
             return res.json({ pastas, arquivos });
         }
+
+        const [compartilhado] = await db.promise().query(
+            'SELECT * FROM compartilhamentos WHERE pasta_id = ? AND usuario_compartilhado_id = ?',
+            [pasta_id, usuario_id]
+        );
         
-        const [pastaCompartilhada] = await db.promise().query(`
-            SELECT c.*, p.* 
-            FROM compartilhamentos c
-            JOIN pastas p ON c.pasta_id = p.id
-            WHERE c.pasta_id = ? AND c.usuario_compartilhado_id = ?
-        `, [pasta_id, usuario_id]);
-        
-        if (pastaCompartilhada.length > 0) {
-            console.log('Acesso à pasta compartilhada');
-            
+        if (compartilhado.length > 0) {
+            console.log('Acesso à pasta via compartilhamento direto');
             const [pastas] = await db.promise().query(
                 'SELECT * FROM pastas WHERE pasta_pai_id = ? ORDER BY nome', 
                 [pasta_id]
@@ -587,10 +658,36 @@ app.get('/api/pasta/:pasta_id/conteudo', async (req, res) => {
                 'SELECT * FROM arquivos WHERE pasta_id = ? ORDER BY data_upload DESC', 
                 [pasta_id]
             );
-            
             return res.json({ pastas, arquivos });
         }
+
+        const [pasta] = await db.promise().query(
+            'SELECT pasta_pai_id FROM pastas WHERE id = ?',
+            [pasta_id]
+        );
         
+        if (pasta.length > 0 && pasta[0].pasta_pai_id) {
+            const pastaPaiId = pasta[0].pasta_pai_id;
+            
+            const [compartilhadoPai] = await db.promise().query(
+                'SELECT * FROM compartilhamentos WHERE pasta_id = ? AND usuario_compartilhado_id = ?',
+                [pastaPaiId, usuario_id]
+            );
+            
+            if (compartilhadoPai.length > 0) {
+                console.log('Acesso à subpasta via compartilhamento da pasta pai');
+                const [pastas] = await db.promise().query(
+                    'SELECT * FROM pastas WHERE pasta_pai_id = ? ORDER BY nome', 
+                    [pasta_id]
+                );
+                const [arquivos] = await db.promise().query(
+                    'SELECT * FROM arquivos WHERE pasta_id = ? ORDER BY data_upload DESC', 
+                    [pasta_id]
+                );
+                return res.json({ pastas, arquivos });
+            }
+        }
+
         console.log('Acesso negado à pasta');
         return res.status(403).json({ error: 'Acesso negado' });
         
@@ -762,7 +859,14 @@ app.delete('/api/compartilhamentos/:id', async (req, res) => {
     try {
         const { id } = req.params;
         
-        await db.promise().query('DELETE FROM compartilhamentos WHERE id = ?', [id]);
+        const [result] = await db.promise().query(
+            'DELETE FROM compartilhamentos WHERE id = ?', 
+            [id]
+        );
+        
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: 'Compartilhamento não encontrado' });
+        }
         
         res.json({ message: 'Compartilhamento removido com sucesso' });
     } catch (error) {
@@ -771,15 +875,19 @@ app.delete('/api/compartilhamentos/:id', async (req, res) => {
     }
 });
 
-app.get('/api/compartilhados/:usuario_id', async (req, res) => {
+app.get('/api/compartilhados/:us_id', async (req, res) => {
     try {
         const [pastas] = await db.promise().query(`
-            SELECT p.*, c.permissao, u.email as proprietario_email 
+            SELECT 
+                p.*,
+                c.id as compartilhamento_id,
+                c.permissao,
+                u.email as proprietario_email
             FROM compartilhamentos c
             JOIN pastas p ON c.pasta_id = p.id
             JOIN usuarios u ON p.usuario_id = u.id
             WHERE c.usuario_compartilhado_id = ?
-        `, [req.params.usuario_id]);
+        `, [req.params.us_id]);
         
         res.json(pastas);
     } catch (error) {
@@ -793,13 +901,16 @@ app.delete('/api/compartilhamentos/:pasta_id', async (req, res) => {
         const { pasta_id } = req.params;
         const { usuario_id } = req.query;
         
-        const [compartilhamento] = await db.promise().query('SELECT * FROM compartilhamentos WHERE pasta_id = ? AND usuario_compartilhado_id = ?', [pasta_id, usuario_id]);
+        console.log('Removendo compartilhamento:', { pasta_id, usuario_id });
         
-        if (compartilhamento.length === 0) {
+        const [result] = await db.promise().query(
+            'DELETE FROM compartilhamentos WHERE pasta_id = ? AND usuario_compartilhado_id = ?', 
+            [pasta_id, usuario_id]
+        );
+        
+        if (result.affectedRows === 0) {
             return res.status(404).json({ error: 'Compartilhamento não encontrado' });
         }
-        
-        await db.promise().query('DELETE FROM compartilhamentos WHERE pasta_id = ? AND usuario_compartilhado_id = ?', [pasta_id, usuario_id]);
         
         res.json({ message: 'Pasta removida da sua lista com sucesso' });
     } catch (error) {

@@ -1,0 +1,136 @@
+ANGULAR 
+<mat-divider />: 
+O componente mat-divider é usado para criar uma linha divisória, tipicamente utilizada para separar conteúdos visualmente.
+Por que é usado: O mat-divider é usado para separar visualmente diferentes seções da página, como a seção de "Categorias" e "Tarefas". A opacidade e a altura ajustadas ajudam a dar uma aparência de separação suave e não intrusiva.
+
+_________________________________________
+
+import { CommonModule } from '@angular/common';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
+
+CommonModule: Para usar diretivas como *ngIf, *ngFor, e pipes no seu template.
+
+Component: Para definir a classe como um componente do Angular.
+
+ChangeDetectionStrategy: Para controlar o comportamento de detecção de mudanças do seu componente.
+
+_________________________________________
+
+provideHttpClient(withFetch()),
+
+O HttpClient é o serviço utilizado para fazer requisições HTTP em aplicações Angular.
+
+O provideHttpClient faz parte da API do Angular e é utilizado para configurar como o HttpClient vai funcionar dentro de uma aplicação Angular
+
+O fetch() é uma API moderna do JavaScript para fazer requisições HTTP e é mais flexível e baseada em Promises
+
+export — isso torna essa "classe" disponível para ser usada em outros arquivos (como se fosse compartilhar um módulo).
+_________________________________________
+
+export class CategoryService {
+  private readonly apiUrl = environment.apiUrl;
+
+  private readonly httpCliente = inject(HttpClient);
+}
+
+
+Aqui, a classe CategoryService está sendo exportada para que possa ser usada em outras partes da aplicação. O export permite que essa classe seja acessada fora do arquivo onde foi definida, permitindo que ela seja injetada e utilizada em outros componentes, módulos ou serviços.
+
+private readonly: A palavra-chave private significa que essa propriedade só pode ser acessada dentro da própria classe CategoryService, enquanto readonly indica que essa propriedade só pode ser atribuída durante a inicialização ou no construtor (não pode ser alterada depois de sua inicialização).
+
+apiUrl: É o nome da propriedade que armazena a URL da API que o serviço vai utilizar para fazer as requisições HTTP.
+
+environment.apiUrl: Aqui, o valor da apiUrl é obtido a partir do arquivo environment.ts. O environment é um objeto que geralmente contém configurações que podem variar dependendo do ambiente. O valor apiUrl dentro de environment pode ser configurado para apontar para a URL da API que você quer usar.
+
+___________________________________________
+
+O que é uma requisição GET?
+Uma requisição GET é um tipo de solicitação feita a um servidor web para obter dados. É uma das formas mais comuns de interação entre clientes (como navegadores ou aplicativos) e servidores.
+Quando você visita um site, por exemplo, seu navegador está fazendo uma requisição GET para o servidor desse site para obter o conteúdo da página.
+
+_________________________________________
+
+Propriedades CSS
+justify-content: alinhar os items horizontalmente.
+
+flex-start: Os itens se alinham ao lado esquerdo do contêiner.
+flex-end: Os itens se alinham ao lado direito do contêiner.  
+center: Os itens se alinham no centro do contêiner.
+space-between: Os itens são exibidos com espaçamento igual entre eles.
+space-around: Os itens são exibidos com espaçamento igual ao redor deles.
+
+
+align-items: Essa propriedade CSS alinha os itens verticalmente e aceita os seguintes valores
+
+flex-start: Os itens se alinham à parte superior do contêiner.
+flex-end: Os itens se alinham à parte inferior do contêiner.
+center: Os itens se alinham no centro vertical do contêiner.
+baseline: Os itens são exibidos na linha de base do contêiner.
+stretch: Os itens são esticados para caber no recipiente.
+
+
+flex-direction: Essa propriedade CSS define a direção em que os itens são colocados no contêiner
+
+row: Os itens são colocados da mesma forma que a direção do texto.
+row-reverse: Os itens são colocados na direção oposta à direção do texto.
+column: Os itens são colocados de cima para baixo.
+column-reverse: Os itens são colocados de baixo para cima.
+
+_________________________________________
+
+Os componentes no Angular são composto por 4 arquivos (css. html, spec, ts)
+Comando para a criação de uma pasta componentes contendo arquivos home.components (css, html, spec, ts)
+PS C:\Users\97857\meu-primeiro-app> ng generate component components/home
+_________________________________________
+
+loginForm!: FormGroup;
+🔍 O que significa:
+
+mt legal eu amei muito,mas ele ta falando que a imagem de undo não ta achando, ai abri o link e não encontrou. me manda outra
+loginForm é uma variável que vai guardar os dados do formulário de login.
+
+!: significa que você vai inicializar depois, mas está dizendo pro TypeScript: “confia em mim, essa variável vai ser criada sim”.
+
+FormGroup é um grupo de campos de formulário. Ele serve para organizar vários campos (tipo email e senha) dentro de um formulário maior.
+_________________________________________
+
+constructor() {
+🔍 O que significa:
+constructor() é um método especial que é chamado automaticamente quando o componente é criado.
+
+Aqui dentro você geralmente configura o que precisa iniciar assim que a tela aparece.
+
+_________________________________________
+
+ this.loginForm = new FormGroup({
+🔍 O que significa:
+this.loginForm = — você está dizendo: "agora quero criar o formulário e guardar ele na variável loginForm".
+
+new FormGroup({...}) — cria um formulário com vários campos.
+
+_________________________________________
+
+  email: new FormControl('',  [Validators.required, Validators.email]),
+🔍 O que significa:
+email: é o nome do campo.
+
+new FormControl('', [...]) — cria esse campo e já define:
+
+'' (string vazia): o valor inicial do campo (nada digitado ainda).
+
+
+[Validators.required, Validators.email]:
+
+Validators.required → obriga o usuário a preencher.
+
+Validators.email → obriga que o conteúdo seja um e-mail válido.
+_________________________________________
+
+Obs: loginForm é a variável e o FormGRoup é o formulário da variável loginForm e o que contem no formulário FormGroup vai ser armazenado em loginForm.
+
+_________________________________________
+
+Classe: Para criar objetos com dados e comportamentos.
+Interface: Para definir comportamentos esperados que outras classes devem seguir.
+no meu material e métodos do artigo, como eu incluo essas informações sobre como serão avaliados os critérios 
+
