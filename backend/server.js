@@ -18,16 +18,16 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const uploadDir = path.join(__dirname, '../uploads');
-        if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir, { recursive: true });
-        }
-        cb(null, uploadDir);
-    },
+destination: (req, file, cb) => {
+    const uploadDir = path.join(__dirname, 'uploads'); 
+    if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+},
     filename: (req, file, cb) => {
         const nomeLimpo = file.originalname.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
         const uniqueName = Date.now() + '-' + nomeLimpo;
@@ -349,7 +349,7 @@ app.delete('/api/arquivos/:id', async (req, res) => {
         
         await db.promise().query('DELETE FROM arquivos WHERE id = ?', [req.params.id]);
         
-        const caminhoArquivo = path.join(__dirname, '../uploads', arquivo.nome_arquivo);
+        const caminhoArquivo = path.join(__dirname, 'uploads', arquivo.nome_arquivo);
         if (fs.existsSync(caminhoArquivo)) {
             fs.unlinkSync(caminhoArquivo);
         }
@@ -456,7 +456,7 @@ app.get('/api/pastas/:id/download', async (req, res) => {
             const [arquivos] = await db.promise().query('SELECT * FROM arquivos WHERE pasta_id = ?', [pastaIdAtual]);
             
             for (const arquivo of arquivos) {
-                const caminhoArquivo = path.join(__dirname, '../uploads', arquivo.nome_arquivo);
+                const caminhoArquivo = path.join(__dirname, 'uploads', arquivo.nome_arquivo); 
                 if (fs.existsSync(caminhoArquivo)) {
                     archive.file(caminhoArquivo, { name: path.join(caminhoAtual, arquivo.nome_original) });
                 }
