@@ -1,7 +1,7 @@
        
     const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:3000'  
-    : 'https://app-fdeaa58d-ec6e-435f-9f32-f3ea2f463701.cleverapps.io'; 
+    : 'https://app-2abf66ad-7555-4638-b43c-7e21ff05491d.cleverapps.io'; 
     
     let todosArquivos = [];
     let todasPastas = [];
@@ -30,6 +30,8 @@
 
     let compartilhamentoEditandoPastaId = null;
     let compartilhamentoEditandoUsuarioId = null;
+
+    let dadosCarregados = false;
 
 async function withSpinner(action, mensagem = 'Processando...') {
     mostrarSpinner(mensagem);
@@ -86,15 +88,27 @@ function esconderSpinner() {
     }
 
 async function carregarDados() {
-    await withSpinner(async () => {
-        await carregarPastas();
-        await carregarArquivos();
-        await carregarCompartilhados();
-        await carregarCompartilhadosPorMim();
+    dadosCarregados = false;
+    mostrarSpinner('Carregando dados...');
+    
+    try {
+        await Promise.all([
+            carregarPastas(),
+            carregarArquivos(),
+            carregarCompartilhados(),
+            carregarCompartilhadosPorMim()
+        ]);
+        
         await carregarEstadoPastas();
-    }, 'Carregando dados...');
+        dadosCarregados = true;
+        esconderSpinner();
+        
+    } catch (error) {
+        console.error('Erro ao carregar dados:', error);
+        esconderSpinner();
+        mostrarAlerta('Erro', 'Falha ao carregar dados. Tente recarregar a página.');
+    }
 }
-
 function abrirSeletorArquivos() {
     todosArquivosParaSeletor = todosArquivos.filter(a => a.pasta_id !== pastaModalAtual);
     
@@ -266,6 +280,8 @@ async function adicionarArquivosSelecionados() {
 async function carregarArquivos() {
     try {
         const response = await fetch(`${API_URL}/api/arquivos/${usuario.id}`);
+        if (!response.ok) throw new Error('Erro na resposta');
+        
         todosArquivos = await response.json();
         paginaAtual = 1;
         
@@ -275,8 +291,11 @@ async function carregarArquivos() {
         if (todasPastas.length > 0) {
             aplicarFiltroEBusca();
         }
+        
     } catch (error) {
         console.error('Erro ao carregar arquivos:', error);
+        document.getElementById('arquivosContainer').innerHTML = 
+            '<div class="empty-state">Erro ao carregar arquivos. <button onclick="carregarDados()">Tentar novamente</button></div>';
     }
 }
 
@@ -788,7 +807,7 @@ async function criarPasta(pastaPaiId = null) {
         
         await withSpinner(async () => {
             try {
-                const response = await fetch('${API_URL}/api/pastas', {
+                const response = await fetch(`${API_URL}/api/pastas`, { 
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -1342,6 +1361,10 @@ async function confirmarCompartilhar() {
     function aplicarFiltroEBusca() {
         const container = document.getElementById('arquivosContainer');
         
+        if (!todosArquivos || todosArquivos.length === 0) {
+            container.innerHTML = '<div class="arquivos-grid"><div class="loading">Carregando arquivos...</div></div>';
+            return;
+        }
         let arquivosFiltrados = [...todosArquivos];
         
         if (filtroAtual !== 'todos') {
