@@ -1,4 +1,4 @@
-      
+       
     const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:3000'  
     : 'https://app-fdeaa58d-ec6e-435f-9f32-f3ea2f463701.cleverapps.io'; 
@@ -33,7 +33,6 @@
 
 async function withSpinner(action, mensagem = 'Processando...') {
     mostrarSpinner(mensagem);
-    await new Promise(resolve => setTimeout(resolve, 500));
     try {
         await action();
     } finally {
@@ -1482,7 +1481,7 @@ async function confirmarCompartilhar() {
             const tipo = arquivo.tipo_arquivo;
             const tamanho = (arquivo.tamanho / 1024).toFixed(2) + ' KB';
             const data = new Date(arquivo.data_upload).toLocaleDateString('pt-BR');
-            const url = `http://localhost:3000/uploads/${arquivo.nome_arquivo}`;
+            const url = `${API_URL}/uploads/${arquivo.nome_arquivo}`;
             
             let icone = 'fa-file';
             let classeCor = 'outros';
@@ -1600,7 +1599,7 @@ async function confirmarCompartilhar() {
         const tipo = arquivo.tipo_arquivo;
         const tamanho = (arquivo.tamanho / 1024).toFixed(2) + ' KB';
         const data = new Date(arquivo.data_upload).toLocaleDateString('pt-BR');
-        const url = `http://localhost:3000/uploads/${arquivo.nome_arquivo}`;
+        const url = `${API_URL}/uploads/${arquivo.nome_arquivo}`;
         
         let icone = 'fa-file';
         let classeCor = 'outros';
@@ -1865,7 +1864,7 @@ async function confirmarMover() {
     }
 
 function abrirArquivo(nomeArquivo, tipo) {
-    const url = `http://localhost:3000/uploads/${nomeArquivo}`;
+    const url = `${API_URL}/uploads/${nomeArquivo}`;
     
     if (tipo === 'imagem') {
         const modal = document.getElementById('imagemModal');
@@ -1898,7 +1897,7 @@ function abrirArquivo(nomeArquivo, tipo) {
 }
 
     function baixarArquivo(nomeArquivo) {
-        const url = `http://localhost:3000/uploads/${nomeArquivo}`;
+        const url = `${API_URL}/uploads/${nomeArquivo}`;
         const nomeOriginal = getNomeOriginalParaDownload(nomeArquivo);
         
         fetch(url)
@@ -2167,7 +2166,7 @@ function fecharComentarioModal() {
             
             const tamanho = (arquivo.tamanho / 1024).toFixed(2) + ' KB';
             const data = new Date(arquivo.data_upload).toLocaleDateString('pt-BR');
-            const url = `http://localhost:3000/uploads/${arquivo.nome_arquivo}`;
+            const url = `${API_URL}/uploads/${arquivo.nome_arquivo}`;
             
             let previewHtml = '';
             if (arquivo.tipo_arquivo === 'imagem') {
