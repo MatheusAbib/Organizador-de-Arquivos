@@ -288,9 +288,7 @@ async function carregarArquivos() {
         const favoritosCount = todosArquivos.filter(a => a.favorito === 1 || a.favorito === true).length;
         atualizarContadorFavoritos(favoritosCount);
         
-        if (todasPastas.length > 0) {
-            aplicarFiltroEBusca();
-        }
+        aplicarFiltroEBusca();
         
     } catch (error) {
         console.error('Erro ao carregar arquivos:', error);
@@ -1363,6 +1361,11 @@ function aplicarFiltroEBusca() {
     
     if (!todosArquivos) {
         container.innerHTML = '<div class="arquivos-grid"><div class="loading">Carregando arquivos...</div></div>';
+        return;
+    }
+    
+    if (todosArquivos.length === 0) {
+        container.innerHTML = '<div class="empty-state">Nenhum arquivo encontrado</div>';
         return;
     }
     
