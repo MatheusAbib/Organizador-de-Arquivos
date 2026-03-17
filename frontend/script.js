@@ -1,7 +1,7 @@
        
     const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:3000'  
-    : 'https://app-2abf66ad-7555-4638-b43c-7e21ff05491d.cleverapps.io'; 
+    : 'https://app-fdeaa58d-ec6e-435f-9f32-f3ea2f463701.cleverapps.io';
     
     let todosArquivos = [];
     let todasPastas = [];
