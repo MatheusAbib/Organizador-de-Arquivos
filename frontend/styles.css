@@ -1041,6 +1041,7 @@ body.modal-open {
 .lista-item .arquivo-acoes {
     display: flex;
     gap: 0.3rem;
+      margin-right: 0.5rem;
     flex-shrink: 0;
 }
 
