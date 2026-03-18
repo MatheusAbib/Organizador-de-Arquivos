@@ -769,7 +769,7 @@ body.modal-open {
 }
 
 .filtro-btn {
-    padding: 0.4rem 1.3rem;
+    padding: 0.4rem 1.15rem;
     border: 1px solid var(--border-color);
     border-radius: 40px;
     background: var(--card-bg);
@@ -778,7 +778,7 @@ body.modal-open {
     font-weight: 500;
     transition: all 0.3s;
     box-shadow: 0 2px 5px var(--shadow-color);
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     white-space: nowrap;
 }
 
