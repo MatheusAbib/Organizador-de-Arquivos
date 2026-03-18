@@ -973,7 +973,7 @@ body.modal-open {
 .lista-item {
     background: var(--card-bg);
     border-radius: 12px;
-    padding: 1rem;
+    padding: 1.5rem 1rem;
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -985,8 +985,8 @@ body.modal-open {
 
 .lista-item .arquivo-tipo {
     top: 0.5rem;
-    margin: 0;
-    padding: 0.2rem 0.6rem;
+    margin: 7px 0;
+    padding: 0.25rem 0.8rem;
     font-size: 0.65rem;
     border-radius: 30px;
     z-index: 1;
@@ -1012,7 +1012,7 @@ body.modal-open {
     width: 55px;
     height: 55px;
     border-radius: 8px;
-    margin: 0;
+    margin-right: 1rem;
     flex-shrink: 0;
 }
 
@@ -1091,7 +1091,7 @@ body.modal-open {
     margin: 15px 0 15px 0;
     padding: 0;
     border: none;
-    font-size: 0.7rem;
+    font-size: 0.75rem;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
