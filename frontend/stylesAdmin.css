@@ -866,6 +866,19 @@ td {
         grid-template-columns: 1fr;
 }
 
+.stats-grid{
+        grid-template-columns: repeat(1, 1fr);
+        gap: 0.4rem;
+}
+
+.admin-header{
+    margin-bottom: 0.5rem;
+}
+
+.paginacao-container {
+width: 415px;
+}
+
 }
 
 @media (min-width: 768px) {

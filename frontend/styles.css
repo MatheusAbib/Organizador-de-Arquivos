@@ -161,7 +161,6 @@ body.modal-open {
     display: none;
     position: absolute;
     top: 100%;
-    left: 0;
     right: 0;
     background: var(--navbar-bg);
     padding: 1rem;
@@ -684,6 +683,10 @@ body.modal-open {
     box-shadow: 0 2px 5px var(--shadow-color);
     font-family: inherit;
     color: var(--text-primary);
+}
+
+#buscaInput{
+    padding: 0.95rem 40px 0.65rem 40px;
 }
 
 .busca-input:focus {
@@ -1246,10 +1249,10 @@ body.modal-open {
 
 .btn-abrir, .btn-baixar, .btn-mover {
     flex: 1;
-    padding: 0.4rem 0.3rem;
+    padding: 0.45rem 0.35rem;
     border: none;
     border-radius: 8px;
-    font-size: 0.7rem;
+    font-size: 0.72rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s;
@@ -2321,7 +2324,7 @@ body.dark-mode .paginacao-rows-selector select {
 }
 
 #alertModal .modal-content {
-    max-width: 400px !important; 
+    max-width: 400px ; 
     width: 90%;
     position: relative;
     z-index: 10001;
@@ -2415,6 +2418,8 @@ body.dark-mode .paginacao-rows-selector select {
         .certifications {
         grid-template-columns: 1fr;
     }
+
+    
 }
 
 @media (min-width: 768px) {
