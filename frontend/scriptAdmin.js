@@ -447,3 +447,39 @@
             }
             fecharConfirmModal();
         }
+
+        async function enviarFavicon() {
+    const fileInput = document.getElementById('faviconUpload');
+    if (!fileInput.files[0]) {
+        alert('Selecione uma imagem primeiro');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('favicon', fileInput.files[0]);
+
+    try {
+        // Pega o ID do usuário logado (ajuste conforme seu sistema)
+        const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
+        
+        const response = await fetch(`${API_URL}/api/admin/favicon`, {
+            method: 'POST',
+            headers: {
+                'usuario-id': usuario.id  // ou como você guarda o ID
+            },
+            body: formData
+        });
+
+        if (response.ok) {
+            alert('✅ Favicon atualizado com sucesso! Recarregue a página (Ctrl+F5) para ver.');
+            // Atualiza a prévia
+            document.getElementById('faviconPreview').src = '/favicon.ico?' + Date.now();
+        } else {
+            const data = await response.json();
+            alert('❌ Erro: ' + (data.error || 'Falha ao atualizar'));
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        alert('❌ Erro de conexão com o servidor');
+    }
+}

@@ -995,3 +995,79 @@ app.delete('/api/admin/usuarios/:id', async (req, res) => {
 app.listen(PORT, HOST, () => {
     console.log(`✅ Servidor rodando na porta ${PORT}`);
 });
+
+// Configuração do multer para upload de imagens (favicon) - ADICIONE ISSO
+const uploadImagem = multer({ 
+    limits: { fileSize: 1024 * 1024 }, // 1MB max
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith('image/')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Apenas imagens são permitidas'));
+        }
+    }
+});
+
+// Middleware para verificar se é admin - ADICIONE ISSO
+async function verificarAdmin(req, res, next) {
+    try {
+        const usuarioId = req.headers['usuario-id'];
+        
+        if (!usuarioId) {
+            return res.status(401).json({ error: 'Não autorizado' });
+        }
+        
+        const [usuario] = await db.promise().query(
+            'SELECT tipo FROM usuarios WHERE id = ?', 
+            [usuarioId]
+        );
+        
+        if (usuario.length > 0 && usuario[0].tipo === 'admin') {
+            next();
+        } else {
+            res.status(403).json({ error: 'Acesso negado - apenas administradores' });
+        }
+    } catch (error) {
+        console.error('Erro ao verificar admin:', error);
+        res.status(500).json({ error: 'Erro no servidor' });
+    }
+}
+
+// Rota para upload do favicon - ADICIONE ISSO
+app.post('/api/admin/favicon', verificarAdmin, uploadImagem.single('favicon'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'Nenhuma imagem enviada' });
+        }
+
+        await db.promise().query(
+            'UPDATE configuracoes SET favicon = ? WHERE id = 1',
+            [req.file.buffer]
+        );
+
+        res.json({ message: 'Favicon atualizado com sucesso!' });
+    } catch (error) {
+        console.error('Erro ao salvar favicon:', error);
+        res.status(500).json({ error: 'Erro ao salvar favicon' });
+    }
+});
+
+// Rota para servir o favicon - ADICIONE ISSO
+app.get('/favicon.ico', async (req, res) => {
+    try {
+        const [config] = await db.promise().query(
+            'SELECT favicon FROM configuracoes WHERE id = 1'
+        );
+        
+        if (config.length > 0 && config[0].favicon && config[0].favicon.length > 0) {
+            res.setHeader('Content-Type', 'image/x-icon');
+            res.setHeader('Cache-Control', 'public, max-age=86400');
+            return res.send(config[0].favicon);
+        } else {
+            res.status(204).end();
+        }
+    } catch (error) {
+        console.error('Erro ao servir favicon:', error);
+        res.status(500).end();
+    }
+});
