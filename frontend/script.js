@@ -1,39 +1,52 @@
-       
-    const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:3000'  
     : 'https://app-fdeaa58d-ec6e-435f-9f32-f3ea2f463701.cleverapps.io';
-    
-    let todosArquivos = [];
-    let todasPastas = [];
-    let compartilhados = [];
-    let pastaAtual = null;
-    let pastaModalAtual = null;
-    let filtroAtual = 'todos';
-    let termoBusca = '';
-    let visualizacaoAtual = 'grid';
-    let arquivoEditando = null;
-    let arquivoParaMover = null;
-    let pastasExpandidas = new Set(); 
 
-    let arquivosSelecionados = new Set();
+let todosArquivos = [];
+let todasPastas = [];
+let compartilhados = [];
+let pastaAtual = null;
+let pastaModalAtual = null;
+let filtroAtual = 'todos';
+let termoBusca = '';
+let visualizacaoAtual = 'grid';
+let arquivoEditando = null;
+let arquivoParaMover = null;
+let pastasExpandidas = new Set();
+let arquivosSelecionados = new Set();
+let pastaParaCompartilhar = null;
+let todosArquivosParaSeletor = [];
+let paginaAtual = 1;
+let itensPorPagina = 8;
+let totalArquivosFiltrados = 0;
+let favoritosPaginaAtual = 1;
+let favoritosItensPorPagina = 8;
+let totalFavoritos = 0;
+let compartilhamentoEditandoPastaId = null;
+let compartilhamentoEditandoUsuarioId = null;
+let dadosCarregados = false;
+let manterModalAberto = false;
+let modalDropdownAberto = false;
+let compartilhadosPorMim = [];
+let compartilhamentoEditandoId = null;
+let historicoPastas = [];
+let todasPastasExpandidas = false;
+let dropdownAtivo = null;
+let pastaCompartilharAtual = null;
+let arquivoComentarioAtual = null;
+let favoritosModalAberto = false;
+let userMenuAberto = false;
+let perfilEditando = false;
+let confirmCallback = null;
+let promptCallback = null;
+let currentPromptValue = '';
 
-    let pastaParaCompartilhar = null;
-    let todosArquivosParaSeletor = [];
-
-    let paginaAtual = 1;
-    let itensPorPagina = 8;
-    let totalArquivosFiltrados = 0;
-
-    let favoritosPaginaAtual = 1;
-    let favoritosItensPorPagina = 8;
-    let totalFavoritos = 0;
-
-    let compartilhamentoEditandoPastaId = null;
-    let compartilhamentoEditandoUsuarioId = null;
-
-    let dadosCarregados = false;
-
-    let manterModalAberto = false;
+const usuario = JSON.parse(localStorage.getItem('usuario'));
+if (!usuario) {
+    window.location.href = 'index.html';
+} else {
+    document.getElementById('userName').textContent = usuario.nome;
+}
 
 async function withSpinner(action, mensagem = 'Processando...') {
     mostrarSpinner(mensagem);
@@ -70,24 +83,16 @@ function esconderSpinner() {
     }
 }
 
-
-    const usuario = JSON.parse(localStorage.getItem('usuario'));
-    if (!usuario) {
-        window.location.href = 'index.html';
-    } else {
-        document.getElementById('userName').textContent = usuario.nome;
+function carregarEstadoPastas() {
+    const saved = localStorage.getItem(`pastasExpandidas_${usuario.id}`);
+    if (saved) {
+        pastasExpandidas = new Set(JSON.parse(saved));
     }
+}
 
-    function carregarEstadoPastas() {
-        const saved = localStorage.getItem(`pastasExpandidas_${usuario.id}`);
-        if (saved) {
-            pastasExpandidas = new Set(JSON.parse(saved));
-        }
-    }
-
-    function salvarEstadoPastas() {
-        localStorage.setItem(`pastasExpandidas_${usuario.id}`, JSON.stringify([...pastasExpandidas]));
-    }
+function salvarEstadoPastas() {
+    localStorage.setItem(`pastasExpandidas_${usuario.id}`, JSON.stringify([...pastasExpandidas]));
+}
 
 async function carregarDados() {
     dadosCarregados = false;
@@ -111,41 +116,38 @@ async function carregarDados() {
         mostrarAlerta('Erro', 'Falha ao carregar dados. Tente recarregar a página.');
     }
 }
+
 function abrirSeletorArquivos() {
     todosArquivosParaSeletor = todosArquivos.filter(a => a.pasta_id !== pastaModalAtual);
-    
     arquivosSelecionados.clear();
     document.getElementById('seletorArquivosModal').classList.add('active');
     toggleBodyScroll(true);
     renderizarSeletorArquivos(todosArquivosParaSeletor);
 }
 
-    function fecharSeletorArquivos() {
-        document.getElementById('seletorArquivosModal').classList.remove('active');
-        arquivosSelecionados.clear();
-        toggleBodyScroll(false);
-    }
+function fecharSeletorArquivos() {
+    document.getElementById('seletorArquivosModal').classList.remove('active');
+    arquivosSelecionados.clear();
+    toggleBodyScroll(false);
+}
 
+function toggleModalDropdown() {
+    const dropdown = document.getElementById('modalDropdown');
+    modalDropdownAberto = !modalDropdownAberto;
+    dropdown.style.display = modalDropdownAberto ? 'block' : 'none';
+}
 
-    let modalDropdownAberto = false;
-
-    function toggleModalDropdown() {
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.pasta-actions-dropdown')) {
         const dropdown = document.getElementById('modalDropdown');
-        modalDropdownAberto = !modalDropdownAberto;
-        dropdown.style.display = modalDropdownAberto ? 'block' : 'none';
-    }
-
-    document.addEventListener('click', function(e) {
-        if (!e.target.closest('.pasta-actions-dropdown')) {
-            const dropdown = document.getElementById('modalDropdown');
-            if (dropdown) {
-                dropdown.style.display = 'none';
-                modalDropdownAberto = false;
-            }
+        if (dropdown) {
+            dropdown.style.display = 'none';
+            modalDropdownAberto = false;
         }
-    });
+    }
+});
 
-  function renderizarSeletorArquivos(arquivos) {
+function renderizarSeletorArquivos(arquivos) {
     const lista = document.getElementById('seletorArquivosLista');
     const termoBusca = document.getElementById('seletorBusca').value.toLowerCase();
     
@@ -165,29 +167,29 @@ function abrirSeletorArquivos() {
         let icone = 'fa-file';
         let classeCor = 'outros';
 
-            if (arquivo.tipo_arquivo === 'imagem') {
-                icone = 'fa-file-image';
-                classeCor = 'imagem';
-            } else if (arquivo.tipo_arquivo === 'pdf') {
-                icone = 'fa-file-pdf';
-                classeCor = 'pdf';
-            } else if (arquivo.tipo_arquivo === 'word') {
-                icone = 'fa-file-word';
-                classeCor = 'word';
-            } else if (arquivo.tipo_arquivo === 'excel') {
-                icone = 'fa-file-excel';
-                classeCor = 'excel';
-            } else if (arquivo.tipo_arquivo === 'powerpoint') {
-                icone = 'fa-file-powerpoint';
-                classeCor = 'powerpoint';
-            }  else if (arquivo.tipo_arquivo === 'video') {  
-                icone = 'fa-file-video';                    
-                classeCor = 'video';                          
-            } else if (arquivo.tipo_arquivo === 'texto') {
-                icone = 'fa-file-alt';
-                classeCor = 'texto';
-            }                                            
-                
+        if (arquivo.tipo_arquivo === 'imagem') {
+            icone = 'fa-file-image';
+            classeCor = 'imagem';
+        } else if (arquivo.tipo_arquivo === 'pdf') {
+            icone = 'fa-file-pdf';
+            classeCor = 'pdf';
+        } else if (arquivo.tipo_arquivo === 'word') {
+            icone = 'fa-file-word';
+            classeCor = 'word';
+        } else if (arquivo.tipo_arquivo === 'excel') {
+            icone = 'fa-file-excel';
+            classeCor = 'excel';
+        } else if (arquivo.tipo_arquivo === 'powerpoint') {
+            icone = 'fa-file-powerpoint';
+            classeCor = 'powerpoint';
+        } else if (arquivo.tipo_arquivo === 'video') {  
+            icone = 'fa-file-video';                    
+            classeCor = 'video';                          
+        } else if (arquivo.tipo_arquivo === 'texto') {
+            icone = 'fa-file-alt';
+            classeCor = 'texto';
+        }                                            
+        
         let localizacao = 'Raiz';
         if (arquivo.pasta_id) {
             const pasta = todasPastas.find(p => p.id === arquivo.pasta_id);
@@ -233,15 +235,18 @@ function atualizarBotaoSelecionados() {
         btn.disabled = count === 0;
     }
 }
-    function filtrarArquivosSeletor() {
-        renderizarSeletorArquivos(todosArquivosParaSeletor);
-    }
+
+function filtrarArquivosSeletor() {
+    renderizarSeletorArquivos(todosArquivosParaSeletor);
+}
 
 async function adicionarArquivosSelecionados() {
     if (arquivosSelecionados.size === 0) {
         mostrarAlerta('Aviso', 'Nenhum arquivo selecionado');
         return;
     }
+    
+    manterModalAberto = true;
     
     await withSpinner(async () => {
         let sucessos = 0;
@@ -257,6 +262,10 @@ async function adicionarArquivosSelecionados() {
                 
                 if (response.ok) {
                     sucessos++;
+                    const index = todosArquivos.findIndex(a => a.id === arquivoId);
+                    if (index !== -1) {
+                        todosArquivos[index].pasta_id = pastaModalAtual;
+                    }
                 } else {
                     erros++;
                 }
@@ -266,8 +275,9 @@ async function adicionarArquivosSelecionados() {
             }
         }
         
-        await carregarArquivos();
-        await abrirModalPasta(pastaModalAtual);
+        if (pastaModalAtual && sucessos > 0) {
+            await atualizarConteudoModal(pastaModalAtual);
+        }
         
         fecharSeletorArquivos();
         
@@ -277,6 +287,8 @@ async function adicionarArquivosSelecionados() {
             mostrarNotificacao(`${sucessos} adicionado(s), ${erros} erro(s)`);
         }
     }, 'Adicionando arquivos...');
+    
+    manterModalAberto = false;
 }
 
 async function carregarArquivos() {
@@ -299,32 +311,29 @@ async function carregarArquivos() {
     }
 }
 
-    async function carregarPastas() {
-        try {
-            const response = await fetch(`${API_URL}/api/pastas/${usuario.id}`);
-            todasPastas = await response.json();
-            renderizarPastas();
-            
-            if (todosArquivos.length > 0) {
-                aplicarFiltroEBusca();
-            }
-        } catch (error) {
-            console.error('Erro ao carregar pastas:', error);
+async function carregarPastas() {
+    try {
+        const response = await fetch(`${API_URL}/api/pastas/${usuario.id}`);
+        todasPastas = await response.json();
+        renderizarPastas();
+        
+        if (todosArquivos.length > 0) {
+            aplicarFiltroEBusca();
         }
+    } catch (error) {
+        console.error('Erro ao carregar pastas:', error);
     }
-    async function carregarCompartilhados() {
-        try {
-            const response = await fetch(`${API_URL}/api/compartilhados/${usuario.id}`);
-            compartilhados = await response.json();
-            console.log('Pastas compartilhadas carregadas:', compartilhados);
-            renderizarCompartilhados();
-        } catch (error) {
-            console.error('Erro ao carregar compartilhados:', error);
-        }
+}
+
+async function carregarCompartilhados() {
+    try {
+        const response = await fetch(`${API_URL}/api/compartilhados/${usuario.id}`);
+        compartilhados = await response.json();
+        renderizarCompartilhados();
+    } catch (error) {
+        console.error('Erro ao carregar compartilhados:', error);
     }
-
-
-    let compartilhadosPorMim = [];
+}
 
 async function carregarCompartilhadosPorMim() {
     try {
@@ -370,9 +379,6 @@ function renderizarCompartilhadosPorMim() {
     `).join('');
 }
 
-
-let compartilhamentoEditandoId = null;
-
 function editarPermissaoCompartilhamento(pastaId, usuarioId, permissaoAtual) {
     compartilhamentoEditandoPastaId = pastaId;
     compartilhamentoEditandoUsuarioId = usuarioId;
@@ -383,7 +389,6 @@ function editarPermissaoCompartilhamento(pastaId, usuarioId, permissaoAtual) {
     document.getElementById('editarPermissaoModal').classList.add('active');
     toggleBodyScroll(true);
 }
-
 
 function fecharEditarPermissaoModal() {
     document.getElementById('editarPermissaoModal').classList.remove('active');
@@ -421,8 +426,6 @@ async function confirmarEditarPermissao() {
 }
 
 async function removerCompartilhamento(compartilhamentoId) {
-    console.log('Tentando remover compartilhamento ID:', compartilhamentoId); 
-    
     mostrarConfirmacao('Remover Compartilhamento', 'Remover esta pasta compartilhada da sua lista? Isso não exclui a pasta original.', async () => {
         await withSpinner(async () => {
             try {
@@ -449,112 +452,110 @@ async function removerCompartilhamento(compartilhamentoId) {
         }, 'Removendo compartilhamento...');
     });
 }
-    function renderizarPastas() {
-        const pastasRaiz = todasPastas.filter(p => p.pasta_pai_id === null);
-        const lista = document.getElementById('pastasList');
-        
-        pastasRaiz.sort((a, b) => a.nome.localeCompare(b.nome));
-        
-        const pastasHtml = pastasRaiz.map(pasta => renderizarPastaItem(pasta, 0)).join('');
-        
-        lista.innerHTML = `
-            <li class="pasta-item root" onclick="fecharModalPasta()" style="cursor: pointer;">
-                <i class="fas fa-folder-open"></i> Todos os arquivos
-            </li>
-            ${pastasHtml}
-        `;
+
+function renderizarPastas() {
+    const pastasRaiz = todasPastas.filter(p => p.pasta_pai_id === null);
+    const lista = document.getElementById('pastasList');
+    
+    pastasRaiz.sort((a, b) => a.nome.localeCompare(b.nome));
+    
+    const pastasHtml = pastasRaiz.map(pasta => renderizarPastaItem(pasta, 0)).join('');
+    
+    lista.innerHTML = `
+        <li class="pasta-item root" onclick="fecharModalPasta()" style="cursor: pointer;">
+            <i class="fas fa-folder-open"></i> Todos os arquivos
+        </li>
+        ${pastasHtml}
+    `;
+}
+
+function renderizarPastaItem(pasta, nivel) {
+    const temFilhos = todasPastas.some(p => p.pasta_pai_id === pasta.id);
+    const estaExpandida = pastasExpandidas.has(pasta.id);
+    
+    const pastaCompartilhada = compartilhados.find(c => c.id === pasta.id);
+    const permissao = pastaCompartilhada ? pastaCompartilhada.permissao : 'proprietario';
+    
+    const indentacao = nivel > 0 ? '　'.repeat(nivel) + '└─ ' : '';
+    
+    return `
+        <li class="pasta-item">
+            ${temFilhos ? `
+                <span class="expand-icon" onclick="event.stopPropagation(); togglePasta(${pasta.id})">
+                    ${estaExpandida ? '<i class="fas fa-chevron-down"></i>' : '<i class="fas fa-chevron-right"></i>'}
+                </span>
+            ` : '<span class="expand-icon" style="opacity: 0;"><i class="fas fa-chevron-right"></i></span>'}
+            
+            <div class="pasta-nome" onclick="abrirModalPasta(${pasta.id})">
+                <span title="${pasta.nome}">${indentacao}${pastaCompartilhada ? '<i class="fas fa-share-alt"></i>' : '<i class="fas fa-folder"></i>'} ${pasta.nome}</span>
+                ${pastaCompartilhada ? `<small>(${permissao})</small>` : ''}
+            </div>
+        </li>
+        ${temFilhos && estaExpandida ? renderizarSubPastas(pasta.id, nivel + 1) : ''}
+    `;
+}
+
+function toggleDropdown(pastaId, event) {
+    event.stopPropagation();
+    
+    if (dropdownAtivo === pastaId) {
+        dropdownAtivo = null;
+    } else {
+        dropdownAtivo = pastaId;
     }
+    
+    renderizarPastas();
+}
 
-    function renderizarPastaItem(pasta, nivel) {
-        const temFilhos = todasPastas.some(p => p.pasta_pai_id === pasta.id);
-        const estaExpandida = pastasExpandidas.has(pasta.id);
-        
-        const pastaCompartilhada = compartilhados.find(c => c.id === pasta.id);
-        const permissao = pastaCompartilhada ? pastaCompartilhada.permissao : 'proprietario';
-        
-        const indentacao = nivel > 0 ? '　'.repeat(nivel) + '└─ ' : '';
-        
-        return `
-            <li class="pasta-item">
-                ${temFilhos ? `
-                    <span class="expand-icon" onclick="event.stopPropagation(); togglePasta(${pasta.id})">
-                        ${estaExpandida ? '<i class="fas fa-chevron-down"></i>' : '<i class="fas fa-chevron-right"></i>'}
-                    </span>
-                ` : '<span class="expand-icon" style="opacity: 0;"><i class="fas fa-chevron-right"></i></span>'}
-                
-                <div class="pasta-nome" onclick="abrirModalPasta(${pasta.id})">
-                    <span title="${pasta.nome}">${indentacao}${pastaCompartilhada ? '<i class="fas fa-share-alt"></i>' : '<i class="fas fa-folder"></i>'} ${pasta.nome}</span>
-                    ${pastaCompartilhada ? `<small>(${permissao})</small>` : ''}
-                </div>
-            </li>
-            ${temFilhos && estaExpandida ? renderizarSubPastas(pasta.id, nivel + 1) : ''}
-        `;
-    }
-
-    let dropdownAtivo = null;
-
-    function toggleDropdown(pastaId, event) {
-        event.stopPropagation();
-        
-        if (dropdownAtivo === pastaId) {
-            dropdownAtivo = null;
-        } else {
-            dropdownAtivo = pastaId;
-        }
-        
+document.addEventListener('click', function() {
+    if (dropdownAtivo) {
+        dropdownAtivo = null;
         renderizarPastas();
     }
+});
 
-    document.addEventListener('click', function() {
-        if (dropdownAtivo) {
-            dropdownAtivo = null;
-            renderizarPastas();
-        }
-    });
+function renderizarSubPastas(pastaPaiId, nivel) {
+    const subPastas = todasPastas.filter(p => p.pasta_pai_id === pastaPaiId);
+    if (subPastas.length === 0) return '';
+    
+    return subPastas.map(pasta => renderizarPastaItem(pasta, nivel)).join('');
+}
 
-    function renderizarSubPastas(pastaPaiId, nivel) {
-        const subPastas = todasPastas.filter(p => p.pasta_pai_id === pastaPaiId);
-        if (subPastas.length === 0) return '';
-        
-        return subPastas.map(pasta => renderizarPastaItem(pasta, nivel)).join('');
+function togglePasta(pastaId) {
+    if (pastasExpandidas.has(pastaId)) {
+        pastasExpandidas.delete(pastaId);
+    } else {
+        pastasExpandidas.add(pastaId);
     }
+    salvarEstadoPastas();
+    renderizarPastas();
+}
 
-    function togglePasta(pastaId) {
-        if (pastasExpandidas.has(pastaId)) {
-            pastasExpandidas.delete(pastaId);
-        } else {
-            pastasExpandidas.add(pastaId);
-        }
-        salvarEstadoPastas();
-        renderizarPastas();
+function toggleTodasPastas() {
+    if (todasPastasExpandidas) {
+        recolherTodasPastas();
+        document.getElementById('toggleIcon').innerHTML = '<i class="fas fa-chevron-down"></i>';
+        document.getElementById('toggleText').textContent = 'Expandir';
+    } else {
+        expandirTodasPastas();
+        document.getElementById('toggleIcon').innerHTML = '<i class="fas fa-chevron-up"></i>';
+        document.getElementById('toggleText').textContent = 'Recolher';
     }
+    todasPastasExpandidas = !todasPastasExpandidas;
+}
 
-    let todasPastasExpandidas = false;
+function expandirTodasPastas() {
+    todasPastas.forEach(pasta => pastasExpandidas.add(pasta.id));
+    salvarEstadoPastas();
+    renderizarPastas();
+}
 
-    function toggleTodasPastas() {
-        if (todasPastasExpandidas) {
-            recolherTodasPastas();
-            document.getElementById('toggleIcon').innerHTML = '<i class="fas fa-chevron-down"></i>';
-            document.getElementById('toggleText').textContent = 'Expandir';
-        } else {
-            expandirTodasPastas();
-            document.getElementById('toggleIcon').innerHTML = '<i class="fas fa-chevron-up"></i>';
-            document.getElementById('toggleText').textContent = 'Recolher';
-        }
-        todasPastasExpandidas = !todasPastasExpandidas;
-    }
+function recolherTodasPastas() {
+    pastasExpandidas.clear();
+    salvarEstadoPastas();
+    renderizarPastas();
+}
 
-    function expandirTodasPastas() {
-        todasPastas.forEach(pasta => pastasExpandidas.add(pasta.id));
-        salvarEstadoPastas();
-        renderizarPastas();
-    }
-
-    function recolherTodasPastas() {
-        pastasExpandidas.clear();
-        salvarEstadoPastas();
-        renderizarPastas();
-    }
 function renderizarCompartilhados() {
     const lista = document.getElementById('compartilhadosList');
     
@@ -584,15 +585,12 @@ function renderizarCompartilhados() {
     `).join('');
 }
 
-let historicoPastas = [];
 async function abrirModalPasta(pastaId, isCompartilhado = false) {
     if (manterModalAberto) {
         manterModalAberto = false;
         await atualizarConteudoModal(pastaId);
         return;
     }
-    
-    console.log('Abrindo modal da pasta ID:', pastaId);
     
     pastaModalAtual = parseInt(pastaId);
     
@@ -669,7 +667,6 @@ async function abrirModalPasta(pastaId, isCompartilhado = false) {
 }
 
 async function atualizarConteudoModal(pastaId) {
-    console.log('7. DENTRO de atualizarConteudoModal - pastaId:', pastaId);
     try {
         const response = await fetch(`${API_URL}/api/pasta/${pastaId}/conteudo?usuario_id=${usuario.id}`);
         
@@ -687,10 +684,9 @@ async function atualizarConteudoModal(pastaId) {
         }
         
         renderizarConteudoPasta(dados.pastas || [], dados.arquivos || [], permissao);
-        console.log('8. FIM de atualizarConteudoModal - SUCESSO');
+        
     } catch (error) {
         console.error('Erro ao atualizar modal:', error);
-        // Mesmo com erro, mantém o modal aberto mostrando erro
         document.getElementById('pastaModalBody').innerHTML = 
             '<div class="empty-state">Erro ao atualizar conteúdo. Tente novamente.</div>';
     }
@@ -775,14 +771,12 @@ function renderizarConteudoPasta(subPastas, arquivos, permissao = 'proprietario'
                     <button class="content-action-btn" onclick="baixarArquivo('${arquivo.nome_arquivo}')" title="Baixar"><i class="fas fa-download"></i></button>
                     <button class="content-action-btn ${arquivo.comentario ? 'active' : ''}" onclick="event.stopPropagation(); abrirComentarioModal(${arquivo.id})" title="${arquivo.comentario ? 'Editar comentário' : 'Adicionar comentário'}"><i class="fas fa-comment"></i></button>
                     
-                    <!-- AÇÕES DE EDIÇÃO: SÓ APARECEM SE FOR EDITAR OU PROPRIETÁRIO -->
                     ${permissao === 'editar' || permissao === 'proprietario' ? `
                         <button class="content-action-btn" onclick="iniciarEdicaoArquivo(${arquivo.id}, '${arquivo.nome_original}')" title="Renomear"><i class="fas fa-edit"></i></button>
                         <button class="content-action-btn" onclick="abrirMoverModal(${arquivo.id})" title="Mover para outra pasta"><i class="fas fa-folder-open"></i></button>
                         <button class="content-action-btn" onclick="removerDaPasta(${arquivo.id})" title="Remover da pasta"><i class="fas fa-arrow-left"></i></button>
                     ` : ''}
                     
-                    <!-- EXCLUIR: SÓ APARECE SE FOR PROPRIETÁRIO -->
                     ${permissao === 'proprietario' ? `
                         <button class="content-action-btn delete" onclick="deletarArquivo(${arquivo.id})" title="Excluir"><i class="fas fa-trash"></i></button>
                     ` : ''}
@@ -808,9 +802,13 @@ async function removerDaPasta(arquivoId) {
                 });
                 
                 if (response.ok) {
-                    await carregarArquivos();
+                    const index = todosArquivos.findIndex(a => a.id === arquivoId);
+                    if (index !== -1) {
+                        todosArquivos[index].pasta_id = null;
+                    }
+                    
                     if (pastaModalAtual) {
-                        await atualizarConteudoModal(pastaModalAtual); 
+                        await atualizarConteudoModal(pastaModalAtual);
                     }
                     mostrarNotificacao('Arquivo removido da pasta');
                 } else {
@@ -826,21 +824,18 @@ async function removerDaPasta(arquivoId) {
     });
 }
 
-    function iniciarEdicaoArquivo(arquivoId, nomeAtual) {
-        mostrarPrompt('Renomear Arquivo', 'Novo nome do arquivo:', nomeAtual, (novoNome) => {
-            if (!novoNome || novoNome === nomeAtual) return;
-            salvarEdicao(arquivoId, novoNome);
-        });
-    }
+function iniciarEdicaoArquivo(arquivoId, nomeAtual) {
+    mostrarPrompt('Renomear Arquivo', 'Novo nome do arquivo:', nomeAtual, (novoNome) => {
+        if (!novoNome || novoNome === nomeAtual) return;
+        salvarEdicao(arquivoId, novoNome);
+    });
+}
 
 function fecharModalPasta() {
-    console.log('9. TENTOU FECHAR - manterModalAberto =', manterModalAberto);
     if (manterModalAberto) {
-        console.log('10. BLOQUEADO - não vai fechar');
-        return; 
+        return;
     }
     
-    console.log('11. VAI FECHAR MESMO');
     document.getElementById('pastaModal').classList.remove('active');
     pastaModalAtual = null;
     historicoPastas = [];
@@ -857,6 +852,8 @@ function abrirModalPastaComHistorico(pastaId) {
 async function criarPasta(pastaPaiId = null) {
     mostrarPrompt('Nova Pasta', 'Nome da nova pasta:', '', async (nome) => {
         if (!nome) return;
+        
+        manterModalAberto = true;
         
         await withSpinner(async () => {
             try {
@@ -876,10 +873,13 @@ async function criarPasta(pastaPaiId = null) {
                         salvarEstadoPastas();
                     }
                     
-                    await carregarPastas();
+                    const novaPasta = await response.json();
+                    todasPastas.push(novaPasta);
+                    
+                    renderizarPastas();
                     
                     if (pastaModalAtual) {
-                        await abrirModalPasta(pastaModalAtual);
+                        await atualizarConteudoModal(pastaModalAtual);
                     }
                     
                     mostrarNotificacao('Pasta criada com sucesso!');
@@ -891,18 +891,20 @@ async function criarPasta(pastaPaiId = null) {
                 mostrarAlerta('Erro', 'Erro ao criar pasta');
             }
         }, 'Criando pasta...');
+        
+        manterModalAberto = false;
     });
 }
 
-    function criarSubPasta(pastaId = null) {
-        criarPasta(pastaId || pastaModalAtual);
-    }
+function criarSubPasta(pastaId = null) {
+    criarPasta(pastaId || pastaModalAtual);
+}
 
-    function uploadParaPasta() {
-        document.getElementById('fileInput').click();
-    }
+function uploadParaPasta() {
+    document.getElementById('fileInput').click();
+}
 
-   async function uploadArquivos(files) {
+async function uploadArquivos(files) {
     await withSpinner(async () => {
         const tiposPermitidos = {
             'pdf': 'pdf',
@@ -1153,9 +1155,12 @@ async function criarPasta(pastaPaiId = null) {
         }
 
         if (sucessos > 0) {
-            await carregarArquivos();
+            const response = await fetch(`${API_URL}/api/arquivos/${usuario.id}`);
+                if (response.ok) {
+                    todosArquivos = await response.json();
+                }
             if (pastaModalAtual) {
-                await abrirModalPasta(pastaModalAtual);
+                await atualizarConteudoModal(pastaModalAtual);
             }
             
             let mensagem = `${sucessos} arquivo(s) enviado(s) com sucesso`;
@@ -1167,40 +1172,41 @@ async function criarPasta(pastaPaiId = null) {
     }, 'Enviando arquivos...');
 }
 
-
-    function mostrarNotificacao(mensagem) {
-        let notificacao = document.getElementById('notificacao');
-        if (!notificacao) {
-            notificacao = document.createElement('div');
-            notificacao.id = 'notificacao';
-            notificacao.style.cssText = `
-                position: fixed;
-                bottom: 20px;
-                right: 20px;
-                background: #48bb78;
-                color: white;
-                padding: 1rem 1.5rem;
-                border-radius: 12px;
-                box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-                z-index: 2000;
-                animation: slideIn 0.3s ease;
-                font-weight: 500;
-            `;
-            document.body.appendChild(notificacao);
-        }
-        
-        notificacao.innerHTML = `<i class="fas fa-check-circle"></i> ${mensagem}`;
-        notificacao.style.display = 'block';
-        
-        setTimeout(() => {
-            notificacao.style.display = 'none';
-        }, 3000);
+function mostrarNotificacao(mensagem) {
+    let notificacao = document.getElementById('notificacao');
+    if (!notificacao) {
+        notificacao = document.createElement('div');
+        notificacao.id = 'notificacao';
+        notificacao.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #48bb78;
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            z-index: 2000;
+            animation: slideIn 0.3s ease;
+            font-weight: 500;
+        `;
+        document.body.appendChild(notificacao);
     }
+    
+    notificacao.innerHTML = `<i class="fas fa-check-circle"></i> ${mensagem}`;
+    notificacao.style.display = 'block';
+    
+    setTimeout(() => {
+        notificacao.style.display = 'none';
+    }, 3000);
+}
 
 async function renomearPasta(pastaId) {
     const pasta = todasPastas.find(p => p.id === pastaId);
     mostrarPrompt('Renomear Pasta', 'Novo nome da pasta:', pasta.nome, async (novoNome) => {
         if (!novoNome || novoNome === pasta.nome) return;
+        
+        manterModalAberto = true;
         
         await withSpinner(async () => {
             try {
@@ -1211,14 +1217,19 @@ async function renomearPasta(pastaId) {
                 });
                 
                 if (response.ok) {
-                    await carregarPastas();
+                    const index = todasPastas.findIndex(p => p.id === pastaId);
+                    if (index !== -1) {
+                        todasPastas[index].nome = novoNome;
+                    }
+                    
+                    renderizarPastas();
                     
                     if (pastaModalAtual === pastaId) {
                         document.getElementById('pastaModalTitle').innerHTML = `<i class="fas fa-folder"></i> ${novoNome}`;
                     }
                     
                     if (pastaModalAtual) {
-                        await abrirModalPasta(pastaModalAtual);
+                        await atualizarConteudoModal(pastaModalAtual);
                     }
                     
                     mostrarNotificacao('Pasta renomeada com sucesso!');
@@ -1230,6 +1241,8 @@ async function renomearPasta(pastaId) {
                 mostrarAlerta('Erro', 'Erro ao renomear pasta');
             }
         }, 'Renomeando pasta...');
+        
+        manterModalAberto = false;
     });
 }
 
@@ -1242,12 +1255,17 @@ async function deletarPasta(pastaId) {
                 });
                 
                 if (response.ok) {
-                    await carregarPastas();
+                    const index = todasPastas.findIndex(p => p.id === pastaId);
+                    if (index !== -1) {
+                        todasPastas.splice(index, 1);
+                    }
+                    
+                    renderizarPastas();
                     
                     if (pastaModalAtual === pastaId) {
                         fecharModalPasta();
                     } else if (pastaModalAtual) {
-                        await abrirModalPasta(pastaModalAtual);
+                        await atualizarConteudoModal(pastaModalAtual);
                     }
                     
                     mostrarNotificacao('Pasta excluída com sucesso!');
@@ -1262,11 +1280,7 @@ async function deletarPasta(pastaId) {
     });
 }
 
-let pastaCompartilharAtual = null;
-
 function abrirCompartilharModal(pastaId) {
-    console.log('abrirCompartilharModal recebeu:', pastaId);
-    
     pastaParaCompartilhar = parseInt(pastaId);
     
     if (isNaN(pastaParaCompartilhar)) {
@@ -1274,8 +1288,6 @@ function abrirCompartilharModal(pastaId) {
         mostrarAlerta('Erro', 'ID da pasta inválido');
         return;
     }
-    
-    console.log('pastaParaCompartilhar setado:', pastaParaCompartilhar);
     
     document.getElementById('compartilharEmail').value = '';
     document.getElementById('compartilharPermissao').value = 'visualizar';
@@ -1297,8 +1309,6 @@ async function confirmarCompartilhar() {
         return;
     }
     
-    console.log('pastaParaCompartilhar:', pastaParaCompartilhar);
-    
     if (!pastaParaCompartilhar || isNaN(pastaParaCompartilhar)) {
         mostrarAlerta('Erro', 'Selecione uma pasta primeiro');
         return;
@@ -1314,8 +1324,6 @@ async function confirmarCompartilhar() {
                 permissao: permissao
             };
             
-            console.log('Enviando dados:', dados);
-            
             const response = await fetch(`${API_URL}/api/compartilhar`, {
                 method: 'POST',
                 headers: { 
@@ -1325,7 +1333,6 @@ async function confirmarCompartilhar() {
             });
             
             const data = await response.json();
-            console.log('Resposta do servidor:', response.status, data);
             
             if (response.ok) {
                 mostrarNotificacao(`Pasta compartilhada com ${email}`);
@@ -1345,71 +1352,70 @@ async function confirmarCompartilhar() {
     }, 'Compartilhando pasta...');
 }
 
+function limparBusca() {
+    const buscaInput = document.getElementById('buscaInput');
+    const limparBtn = document.getElementById('limparBuscaBtn');
+    
+    buscaInput.value = '';
+    termoBusca = '';
+    paginaAtual = 1;
+    aplicarFiltroEBusca();
+    
+    limparBtn.style.display = 'none';
+    
+    buscaInput.focus();
+}
 
-        function limparBusca() {
-            const buscaInput = document.getElementById('buscaInput');
-            const limparBtn = document.getElementById('limparBuscaBtn');
-            
-            buscaInput.value = '';
-            termoBusca = '';
-            paginaAtual = 1;
-            aplicarFiltroEBusca();
-            
-            limparBtn.style.display = 'none';
-            
-            buscaInput.focus();
-        }
-
-        function buscarArquivos() {
-            const buscaInput = document.getElementById('buscaInput');
-            const limparBtn = document.getElementById('limparBuscaBtn');
-            
-            termoBusca = buscaInput.value.toLowerCase();
-            paginaAtual = 1;
-            aplicarFiltroEBusca();
-            
-            if (termoBusca.length > 0) {
-                limparBtn.style.display = 'flex';
-            } else {
-                limparBtn.style.display = 'none';
-            }
-        }
-
-        buscaInput.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                limparBusca();
-            }
-        });
-
-        function filtrarArquivos(tipo) {
-            filtroAtual = tipo;
-            document.querySelectorAll('.filtro-btn').forEach(btn => {
-                btn.classList.remove('active');
-                const btnText = btn.textContent.toLowerCase();
-                if (tipo === 'todos' && btnText.includes('todos')) {
-                    btn.classList.add('active');
-                } else if (tipo === 'imagem' && btnText.includes('imagens')) {
-                    btn.classList.add('active');
-                } else if (tipo === 'video' && btnText.includes('vídeos')) {
-                    btn.classList.add('active');
-                } else if (btnText.includes(tipo) && !btnText.includes('todos')) {
-                    btn.classList.add('active');
-                }
-            });
-            paginaAtual = 1;
-            aplicarFiltroEBusca();
-        }
-
-    function mudarVisualizacao(tipo) {
-        visualizacaoAtual = tipo;
-        document.querySelectorAll('.view-btn').forEach(btn => {
-            btn.classList.remove('active');
-            if (btn.textContent.toLowerCase().includes(tipo)) {
-                btn.classList.add('active');
-            }
-        });
-        aplicarFiltroEBusca();
+function buscarArquivos() {
+    const buscaInput = document.getElementById('buscaInput');
+    const limparBtn = document.getElementById('limparBuscaBtn');
+    
+    termoBusca = buscaInput.value.toLowerCase();
+    paginaAtual = 1;
+    aplicarFiltroEBusca();
+    
+    if (termoBusca.length > 0) {
+        limparBtn.style.display = 'flex';
+    } else {
+        limparBtn.style.display = 'none';
     }
+}
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        limparBusca();
+    }
+});
+
+function filtrarArquivos(tipo) {
+    filtroAtual = tipo;
+    document.querySelectorAll('.filtro-btn').forEach(btn => {
+        btn.classList.remove('active');
+        const btnText = btn.textContent.toLowerCase();
+        if (tipo === 'todos' && btnText.includes('todos')) {
+            btn.classList.add('active');
+        } else if (tipo === 'imagem' && btnText.includes('imagens')) {
+            btn.classList.add('active');
+        } else if (tipo === 'video' && btnText.includes('vídeos')) {
+            btn.classList.add('active');
+        } else if (btnText.includes(tipo) && !btnText.includes('todos')) {
+            btn.classList.add('active');
+        }
+    });
+    paginaAtual = 1;
+    aplicarFiltroEBusca();
+}
+
+function mudarVisualizacao(tipo) {
+    visualizacaoAtual = tipo;
+    document.querySelectorAll('.view-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.textContent.toLowerCase().includes(tipo)) {
+            btn.classList.add('active');
+        }
+    });
+    aplicarFiltroEBusca();
+}
 
 function aplicarFiltroEBusca() {
     const container = document.getElementById('arquivosContainer');
@@ -1429,7 +1435,6 @@ function aplicarFiltroEBusca() {
                 <p class="empty-state-description">
                     Arraste arquivos para a área de <br> upload para começar
                 </p>
-
             </div>
         `;
         return;
@@ -1484,9 +1489,6 @@ function aplicarFiltroEBusca() {
                 <p class="empty-state-description">
                     Tente buscar com outros termos ou faça upload de novos arquivos
                 </p>
-                <button class="empty-state-btn" onclick="document.getElementById('fileInput').click()">
-                    <i class="fas fa-cloud-upload-alt"></i> Enviar arquivos
-                </button>
             </div>
         `;
     } else {
@@ -1505,225 +1507,225 @@ function aplicarFiltroEBusca() {
     container.innerHTML = conteudoHtml;
 }
 
-    function renderizarPaginacao() {
-        const totalPaginas = Math.max(1, Math.ceil(totalArquivosFiltrados / itensPorPagina));
-        
-        const inicio = totalArquivosFiltrados > 0 ? (paginaAtual - 1) * itensPorPagina + 1 : 0;
-        const fim = Math.min(paginaAtual * itensPorPagina, totalArquivosFiltrados);
-        
-        let paginacaoHtml = `
-            <div class="paginacao-container">
-                <div class="paginacao-controles">
-                    <span class="paginacao-info">
-                        <i class="fas fa-file"></i> 
-                        ${totalArquivosFiltrados > 0 ? `${inicio}-${fim}` : '0-0'} de ${totalArquivosFiltrados}
-                    </span>
-                    
-                    <button class="paginacao-btn" onclick="mudarPagina(1)" ${paginaAtual === 1 ? 'disabled' : ''} title="Primeira página">
-                        <i class="fas fa-angle-double-left"></i>
-                    </button>
-                    
-                    <button class="paginacao-btn" onclick="mudarPagina(${paginaAtual - 1})" ${paginaAtual === 1 ? 'disabled' : ''} title="Página anterior">
-                        <i class="fas fa-angle-left"></i>
-                    </button>
-        `;
-        
-        let inicioRange = Math.max(1, paginaAtual - 2);
-        let fimRange = Math.min(totalPaginas, paginaAtual + 2);
-        
-        if (inicioRange > 1) {
-            paginacaoHtml += `
-                <button class="paginacao-btn" onclick="mudarPagina(1)">1</button>
-                ${inicioRange > 2 ? '<span class="paginacao-btn" style="border: none; background: none; cursor: default;">...</span>' : ''}
-            `;
-        }
-        
-        for (let i = inicioRange; i <= fimRange; i++) {
-            paginacaoHtml += `
-                <button class="paginacao-btn ${i === paginaAtual ? 'active' : ''}" onclick="mudarPagina(${i})">${i}</button>
-            `;
-        }
-        
-        if (fimRange < totalPaginas) {
-            paginacaoHtml += `
-                ${fimRange < totalPaginas - 1 ? '<span class="paginacao-btn" style="border: none; background: none; cursor: default;">...</span>' : ''}
-                <button class="paginacao-btn" onclick="mudarPagina(${totalPaginas})">${totalPaginas}</button>
-            `;
-        }
-        
+function renderizarPaginacao() {
+    const totalPaginas = Math.max(1, Math.ceil(totalArquivosFiltrados / itensPorPagina));
+    
+    const inicio = totalArquivosFiltrados > 0 ? (paginaAtual - 1) * itensPorPagina + 1 : 0;
+    const fim = Math.min(paginaAtual * itensPorPagina, totalArquivosFiltrados);
+    
+    let paginacaoHtml = `
+        <div class="paginacao-container">
+            <div class="paginacao-controles">
+                <span class="paginacao-info">
+                    <i class="fas fa-file"></i> 
+                    ${totalArquivosFiltrados > 0 ? `${inicio}-${fim}` : '0-0'} de ${totalArquivosFiltrados}
+                </span>
+                
+                <button class="paginacao-btn" onclick="mudarPagina(1)" ${paginaAtual === 1 ? 'disabled' : ''} title="Primeira página">
+                    <i class="fas fa-angle-double-left"></i>
+                </button>
+                
+                <button class="paginacao-btn" onclick="mudarPagina(${paginaAtual - 1})" ${paginaAtual === 1 ? 'disabled' : ''} title="Página anterior">
+                    <i class="fas fa-angle-left"></i>
+                </button>
+    `;
+    
+    let inicioRange = Math.max(1, paginaAtual - 2);
+    let fimRange = Math.min(totalPaginas, paginaAtual + 2);
+    
+    if (inicioRange > 1) {
         paginacaoHtml += `
-                    <button class="paginacao-btn" onclick="mudarPagina(${paginaAtual + 1})" ${paginaAtual === totalPaginas ? 'disabled' : ''} title="Próxima página">
-                        <i class="fas fa-angle-right"></i>
-                    </button>
-                    
-                    <button class="paginacao-btn" onclick="mudarPagina(${totalPaginas})" ${paginaAtual === totalPaginas ? 'disabled' : ''} title="Última página">
-                        <i class="fas fa-angle-double-right"></i>
-                    </button>
-                </div>
+            <button class="paginacao-btn" onclick="mudarPagina(1)">1</button>
+            ${inicioRange > 2 ? '<span class="paginacao-btn" style="border: none; background: none; cursor: default;">...</span>' : ''}
+        `;
+    }
+    
+    for (let i = inicioRange; i <= fimRange; i++) {
+        paginacaoHtml += `
+            <button class="paginacao-btn ${i === paginaAtual ? 'active' : ''}" onclick="mudarPagina(${i})">${i}</button>
+        `;
+    }
+    
+    if (fimRange < totalPaginas) {
+        paginacaoHtml += `
+            ${fimRange < totalPaginas - 1 ? '<span class="paginacao-btn" style="border: none; background: none; cursor: default;">...</span>' : ''}
+            <button class="paginacao-btn" onclick="mudarPagina(${totalPaginas})">${totalPaginas}</button>
+        `;
+    }
+    
+    paginacaoHtml += `
+                <button class="paginacao-btn" onclick="mudarPagina(${paginaAtual + 1})" ${paginaAtual === totalPaginas ? 'disabled' : ''} title="Próxima página">
+                    <i class="fas fa-angle-right"></i>
+                </button>
                 
-                <div class="paginacao-rows-selector">
-                    <label for="itensPorPagina">Mostrar:</label>
-                    <select id="itensPorPagina" onchange="mudarItensPorPagina(this.value)">
-                        <option value="8" ${itensPorPagina === 8 ? 'selected' : ''}>8</option>
-                        <option value="12" ${itensPorPagina === 12 ? 'selected' : ''}>12</option>
-                        <option value="16" ${itensPorPagina === 16 ? 'selected' : ''}>16</option>
-                        <option value="24" ${itensPorPagina === 24 ? 'selected' : ''}>24</option>
-                        <option value="32" ${itensPorPagina === 32 ? 'selected' : ''}>32</option>
-                    </select>
+                <button class="paginacao-btn" onclick="mudarPagina(${totalPaginas})" ${paginaAtual === totalPaginas ? 'disabled' : ''} title="Última página">
+                    <i class="fas fa-angle-double-right"></i>
+                </button>
+            </div>
+            
+            <div class="paginacao-rows-selector">
+                <label for="itensPorPagina">Mostrar:</label>
+                <select id="itensPorPagina" onchange="mudarItensPorPagina(this.value)">
+                    <option value="8" ${itensPorPagina === 8 ? 'selected' : ''}>8</option>
+                    <option value="12" ${itensPorPagina === 12 ? 'selected' : ''}>12</option>
+                    <option value="16" ${itensPorPagina === 16 ? 'selected' : ''}>16</option>
+                    <option value="24" ${itensPorPagina === 24 ? 'selected' : ''}>24</option>
+                    <option value="32" ${itensPorPagina === 32 ? 'selected' : ''}>32</option>
+                </select>
+            </div>
+            
+            <div class="paginacao-resumo">
+                Mostrando página ${paginaAtual} de ${totalPaginas}
+            </div>
+        </div>
+    `;
+    
+    return paginacaoHtml;
+}
+
+function mudarPagina(novaPagina) {
+    const totalPaginas = Math.max(1, Math.ceil(totalArquivosFiltrados / itensPorPagina));
+    
+    if (novaPagina < 1) novaPagina = 1;
+    if (novaPagina > totalPaginas) novaPagina = totalPaginas;
+    
+    paginaAtual = novaPagina;
+    aplicarFiltroEBusca();
+    
+    const container = document.getElementById('arquivosContainer');
+    container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function mudarItensPorPagina(novoValor) {
+    itensPorPagina = parseInt(novoValor);
+    const totalPaginas = Math.max(1, Math.ceil(totalArquivosFiltrados / itensPorPagina));
+    
+    if (paginaAtual > totalPaginas) {
+        paginaAtual = totalPaginas;
+    }
+    
+    aplicarFiltroEBusca();
+}
+
+function renderizarArquivosGrid(arquivos) {
+    return arquivos.map(arquivo => {
+        const tipo = arquivo.tipo_arquivo;
+        const tamanho = (arquivo.tamanho / 1024).toFixed(2) + ' KB';
+        const data = new Date(arquivo.data_upload).toLocaleDateString('pt-BR');
+        const url = `${API_URL}/uploads/${arquivo.nome_arquivo}`;
+        
+        let icone = 'fa-file';
+        let classeCor = 'outros';
+
+        if (tipo === 'imagem') {
+            icone = 'fa-file-image';
+            classeCor = 'imagem';
+        } else if (tipo === 'pdf') {
+            icone = 'fa-file-pdf';
+            classeCor = 'pdf';
+        } else if (tipo === 'word') {
+            icone = 'fa-file-word';
+            classeCor = 'word';
+        } else if (tipo === 'excel') {
+            icone = 'fa-file-excel';
+            classeCor = 'excel';
+        } else if (tipo === 'video') {
+            icone = 'fa-file-video';
+            classeCor = 'video';
+        } else if (tipo === 'powerpoint') {
+            icone = 'fa-file-powerpoint';
+            classeCor = 'powerpoint';
+        } else if (tipo === 'texto') {
+            icone = 'fa-file-alt';
+            classeCor = 'texto';
+        } else {
+            classeCor = 'outros';
+        }
+        
+        let nomeDestacado = arquivo.nome_original;
+        if (termoBusca && arquivoEditando !== arquivo.id) {
+            const regex = new RegExp(`(${termoBusca})`, 'gi');
+            nomeDestacado = arquivo.nome_original.replace(regex, '<mark>$1</mark>');
+        }
+
+        let previewHtml = '';
+        if (tipo === 'imagem') {
+            previewHtml = `<div class="imagem-preview" onclick="abrirArquivo('${arquivo.nome_arquivo}', '${tipo}')"><img src="${url}" alt="${arquivo.nome_original}"></div>`;
+        }
+
+        let nomeHtml = '';
+        if (arquivoEditando === arquivo.id) {
+            nomeHtml = `
+                <div>
+                    <input type="text" id="edit-nome-${arquivo.id}" class="edit-input" value="${arquivo.nome_original}">
+                    <div class="edit-actions">
+                        <button class="edit-save" onclick="salvarEdicao(${arquivo.id}, document.getElementById('edit-nome-${arquivo.id}').value)"><i class="fas fa-check"></i> Salvar</button>
+                        <button class="edit-cancel" onclick="cancelarEdicao()"><i class="fas fa-times"></i> Cancelar</button>
+                    </div>
                 </div>
-                
-                <div class="paginacao-resumo">
-                    Mostrando página ${paginaAtual} de ${totalPaginas}
+            `;
+        } else {
+            nomeHtml = `
+                <h3>
+                    ${nomeDestacado}
+                    <button class="edit-btn" onclick="iniciarEdicao(${JSON.stringify(arquivo).replace(/"/g, '&quot;')})"><i class="fas fa-edit"></i></button>
+                </h3>
+            `;
+        }
+
+        let localizacaoHtml = '';
+        if (arquivo.pasta_id) {
+            const pasta = todasPastas.find(p => p.id === arquivo.pasta_id);
+            if (pasta) {
+                localizacaoHtml = `
+                    <div class="pasta-localizacao" title="Pasta: ${pasta.nome}">
+                        <i class="fas fa-folder"></i>
+                       <span class="pasta-nome-link" onclick="event.stopPropagation(); abrirModalPastaComHistorico(${pasta.id})">${pasta.nome}</span>
+                    </div>
+                `;
+            } else {
+                localizacaoHtml = `<div class="pasta-localizacao"><i class="fas fa-folder"></i> <span class="raiz-texto">Pasta não encontrada</span></div>`;
+            }
+        } else {
+            localizacaoHtml = `<div class="pasta-localizacao"><i class="fas fa-folder"></i> <span class="raiz-texto">Raiz</span></div>`;
+        }
+
+        return `
+            <div class="arquivo-card ${tipo === 'imagem' ? 'com-imagem' : ''}">
+                <div class="card-header">
+                        <span class="arquivo-tipo tipo-${tipo}">${tipo}</span>
+                    <div class="header-actions">
+                        <button class="favorito-btn ${arquivo.favorito ? 'active' : ''}" onclick="favoritarArquivo(${arquivo.id}, ${!arquivo.favorito})" title="${arquivo.favorito ? 'Desfavoritar' : 'Favoritar'}">
+                            <i class="fas fa-star"></i>
+                        </button>
+                        <button class="comentario-btn ${arquivo.comentario ? 'active' : ''}" onclick="event.stopPropagation(); abrirComentarioModal(${arquivo.id})" title="${arquivo.comentario ? 'Editar comentário' : 'Adicionar comentário'}">
+                            <i class="fas fa-comment"></i>
+                        </button>
+                        <button class="delete-btn" onclick="deletarArquivo(${arquivo.id})" title="Excluir">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                ${previewHtml || `<div class="arquivo-icone ${classeCor}"><i class="fas ${icone} fa-2x"></i></div>`}
+                <div class="arquivo-info">
+                    ${nomeHtml}
+                    <div class="arquivo-meta">
+                        <span>${tamanho}</span>
+                        <span>${data}</span>
+                    </div>
+                </div>
+                ${localizacaoHtml}
+                <div class="arquivo-acoes">
+                    <button class="btn-abrir" onclick="abrirArquivo('${arquivo.nome_arquivo}', '${tipo}')"><i class="fas fa-eye"></i> Abrir</button>
+                    <button class="btn-baixar" onclick="baixarArquivo('${arquivo.nome_arquivo}')"><i class="fas fa-download"></i> Baixar</button>
+                    <button class="btn-mover" onclick="abrirMoverModal(${arquivo.id})"><i class="fas fa-folder-open"></i> Mover</button>
                 </div>
             </div>
         `;
-        
-        return paginacaoHtml;
-    }
+    }).join('');
+}
 
-    function mudarPagina(novaPagina) {
-        const totalPaginas = Math.max(1, Math.ceil(totalArquivosFiltrados / itensPorPagina));
-        
-        if (novaPagina < 1) novaPagina = 1;
-        if (novaPagina > totalPaginas) novaPagina = totalPaginas;
-        
-        paginaAtual = novaPagina;
-        aplicarFiltroEBusca();
-        
-        const container = document.getElementById('arquivosContainer');
-        container.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-
-    function mudarItensPorPagina(novoValor) {
-        itensPorPagina = parseInt(novoValor);
-        const totalPaginas = Math.max(1, Math.ceil(totalArquivosFiltrados / itensPorPagina));
-        
-        if (paginaAtual > totalPaginas) {
-            paginaAtual = totalPaginas;
-        }
-        
-        aplicarFiltroEBusca();
-    }
-
-    function renderizarArquivosGrid(arquivos) {
-        return arquivos.map(arquivo => {
-            const tipo = arquivo.tipo_arquivo;
-            const tamanho = (arquivo.tamanho / 1024).toFixed(2) + ' KB';
-            const data = new Date(arquivo.data_upload).toLocaleDateString('pt-BR');
-            const url = `${API_URL}/uploads/${arquivo.nome_arquivo}`;
-            
-            let icone = 'fa-file';
-            let classeCor = 'outros';
-
-            if (tipo === 'imagem') {
-                icone = 'fa-file-image';
-                classeCor = 'imagem';
-            } else if (tipo === 'pdf') {
-                icone = 'fa-file-pdf';
-                classeCor = 'pdf';
-            } else if (tipo === 'word') {
-                icone = 'fa-file-word';
-                classeCor = 'word';
-            } else if (tipo === 'excel') {
-                icone = 'fa-file-excel';
-                classeCor = 'excel';
-            } else if (tipo === 'video') {
-                icone = 'fa-file-video';
-                classeCor = 'video';
-            } else if (tipo === 'powerpoint') {
-                icone = 'fa-file-powerpoint';
-                classeCor = 'powerpoint';
-            } else if (tipo === 'texto') {
-                icone = 'fa-file-alt';
-                classeCor = 'texto';
-            } else {
-                classeCor = 'outros';
-            }
-            
-            let nomeDestacado = arquivo.nome_original;
-            if (termoBusca && arquivoEditando !== arquivo.id) {
-                const regex = new RegExp(`(${termoBusca})`, 'gi');
-                nomeDestacado = arquivo.nome_original.replace(regex, '<mark>$1</mark>');
-            }
-
-            let previewHtml = '';
-            if (tipo === 'imagem') {
-                previewHtml = `<div class="imagem-preview" onclick="abrirArquivo('${arquivo.nome_arquivo}', '${tipo}')"><img src="${url}" alt="${arquivo.nome_original}"></div>`;
-            }
-
-            let nomeHtml = '';
-            if (arquivoEditando === arquivo.id) {
-                nomeHtml = `
-                    <div>
-                        <input type="text" id="edit-nome-${arquivo.id}" class="edit-input" value="${arquivo.nome_original}">
-                        <div class="edit-actions">
-                            <button class="edit-save" onclick="salvarEdicao(${arquivo.id}, document.getElementById('edit-nome-${arquivo.id}').value)"><i class="fas fa-check"></i> Salvar</button>
-                            <button class="edit-cancel" onclick="cancelarEdicao()"><i class="fas fa-times"></i> Cancelar</button>
-                        </div>
-                    </div>
-                `;
-            } else {
-                nomeHtml = `
-                    <h3>
-                        ${nomeDestacado}
-                        <button class="edit-btn" onclick="iniciarEdicao(${JSON.stringify(arquivo).replace(/"/g, '&quot;')})"><i class="fas fa-edit"></i></button>
-                    </h3>
-                `;
-            }
-
-            let localizacaoHtml = '';
-            if (arquivo.pasta_id) {
-                const pasta = todasPastas.find(p => p.id === arquivo.pasta_id);
-                if (pasta) {
-                    localizacaoHtml = `
-                        <div class="pasta-localizacao" title="Pasta: ${pasta.nome}">
-                            <i class="fas fa-folder"></i>
-                           <span class="pasta-nome-link" onclick="event.stopPropagation(); abrirModalPastaComHistorico(${pasta.id})">${pasta.nome}</span>
-                        </div>
-                    `;
-                } else {
-                    localizacaoHtml = `<div class="pasta-localizacao"><i class="fas fa-folder"></i> <span class="raiz-texto">Pasta não encontrada</span></div>`;
-                }
-            } else {
-                localizacaoHtml = `<div class="pasta-localizacao"><i class="fas fa-folder"></i> <span class="raiz-texto">Raiz</span></div>`;
-            }
-
-            return `
-                <div class="arquivo-card ${tipo === 'imagem' ? 'com-imagem' : ''}">
-                    <div class="card-header">
-                            <span class="arquivo-tipo tipo-${tipo}">${tipo}</span>
-                        <div class="header-actions">
-                            <button class="favorito-btn ${arquivo.favorito ? 'active' : ''}" onclick="favoritarArquivo(${arquivo.id}, ${!arquivo.favorito})" title="${arquivo.favorito ? 'Desfavoritar' : 'Favoritar'}">
-                                <i class="fas fa-star"></i>
-                            </button>
-                            <button class="comentario-btn ${arquivo.comentario ? 'active' : ''}" onclick="event.stopPropagation(); abrirComentarioModal(${arquivo.id})" title="${arquivo.comentario ? 'Editar comentário' : 'Adicionar comentário'}">
-                                <i class="fas fa-comment"></i>
-                            </button>
-                            <button class="delete-btn" onclick="deletarArquivo(${arquivo.id})" title="Excluir">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-                    </div>
-                    ${previewHtml || `<div class="arquivo-icone ${classeCor}"><i class="fas ${icone} fa-2x"></i></div>`}
-                    <div class="arquivo-info">
-                        ${nomeHtml}
-                        <div class="arquivo-meta">
-                            <span>${tamanho}</span>
-                            <span>${data}</span>
-                        </div>
-                    </div>
-                    ${localizacaoHtml}
-                    <div class="arquivo-acoes">
-                        <button class="btn-abrir" onclick="abrirArquivo('${arquivo.nome_arquivo}', '${tipo}')"><i class="fas fa-eye"></i> Abrir</button>
-                        <button class="btn-baixar" onclick="baixarArquivo('${arquivo.nome_arquivo}')"><i class="fas fa-download"></i> Baixar</button>
-                        <button class="btn-mover" onclick="abrirMoverModal(${arquivo.id})"><i class="fas fa-folder-open"></i> Mover</button>
-                    </div>
-                </div>
-            `;
-        }).join('');
-    }
-
-    function renderizarArquivosLista(arquivos) {
+function renderizarArquivosLista(arquivos) {
     return arquivos.map(arquivo => {
         const tipo = arquivo.tipo_arquivo;
         const tamanho = (arquivo.tamanho / 1024).toFixed(2) + ' KB';
@@ -1745,7 +1747,7 @@ function aplicarFiltroEBusca() {
         } else if (tipo === 'excel') {
             icone = 'fa-file-excel';
             classeCor = 'excel';
-       } else if (tipo === 'video') {
+        } else if (tipo === 'video') {
             icone = 'fa-file-video';
             classeCor = 'video';
         } else if (tipo === 'powerpoint') {
@@ -1838,56 +1840,48 @@ function aplicarFiltroEBusca() {
         `;
     }).join('');
 }
+
 async function deletarArquivo(id) {
-    console.log('1. ANTES - manterModalAberto =', manterModalAberto);
     manterModalAberto = true;
-    console.log('2. DEPOIS - manterModalAberto =', manterModalAberto);
     
     mostrarConfirmacao('Excluir Arquivo', 'Tem certeza que deseja deletar este arquivo?', async () => {
-        await withSpinner(async () => {
-            try {
-                const response = await fetch(`${API_URL}/api/arquivos/${id}`, {
-                    method: 'DELETE'
-                });
+        try {
+            const response = await fetch(`${API_URL}/api/arquivos/${id}`, {
+                method: 'DELETE'
+            });
 
-                if (response.ok) {
-                    const index = todosArquivos.findIndex(a => a.id === id);
-                    if (index !== -1) {
-                        todosArquivos.splice(index, 1);
-                    }
-                    
-                    const favoritosCount = todosArquivos.filter(a => a.favorito === 1 || a.favorito === true).length;
-                    atualizarContadorFavoritos(favoritosCount);
-                    
-                    if (favoritosModalAberto) {
-                        await carregarFavoritos(); 
-                    }
-                    
-                    if (pastaModalAtual) {
-                        console.log('3. ANTES de atualizarConteudoModal');
-                        await atualizarConteudoModal(pastaModalAtual);
-                        console.log('4. DEPOIS de atualizarConteudoModal');
-                    } else {
-                        aplicarFiltroEBusca();
-                    }
-                    
-                    mostrarNotificacao('Arquivo excluído com sucesso!');
-                } else {
-                    const errorData = await response.json();
-                    console.error('Erro na resposta:', errorData);
-                    mostrarAlerta('Erro', errorData.error || 'Erro ao deletar arquivo');
+            if (response.ok) {
+                const index = todosArquivos.findIndex(a => a.id === id);
+                if (index !== -1) {
+                    todosArquivos.splice(index, 1);
                 }
-            } catch (error) {
-                console.error('Erro ao deletar:', error);
-                mostrarAlerta('Erro', 'Erro ao deletar arquivo: ' + error.message);
-            } finally {
-                console.log('5. FINAL - manterModalAberto ANTES =', manterModalAberto);
-                manterModalAberto = false;
-                console.log('6. FINAL - manterModalAberto DEPOIS =', manterModalAberto);
+                
+                const favoritosCount = todosArquivos.filter(a => a.favorito === 1 || a.favorito === true).length;
+                atualizarContadorFavoritos(favoritosCount);
+                
+                if (favoritosModalAberto) {
+                    await carregarFavoritos();
+                }
+                
+                if (pastaModalAtual) {
+                    await atualizarConteudoModal(pastaModalAtual);  // ← ISSO ESTÁ CORRETO!
+                } else {
+                    aplicarFiltroEBusca();
+                }
+                
+                mostrarNotificacao('Arquivo excluído com sucesso!');
             }
-        }, 'Excluindo arquivo...');
+        } catch (error) {
+            console.error('Erro ao deletar:', error);
+            mostrarAlerta('Erro', 'Erro ao deletar arquivo');
+        } finally {
+            manterModalAberto = false;
+        }
     });
 }
+
+
+
 async function favoritarArquivo(id, favorito) {
     manterModalAberto = true;
     
@@ -1911,7 +1905,7 @@ async function favoritarArquivo(id, favorito) {
                 if (favoritosModalAberto) {
                     await carregarFavoritos();
                 } else if (pastaModalAtual) {
-                    await atualizarConteudoModal(pastaModalAtual); 
+                    await atualizarConteudoModal(pastaModalAtual);
                 } else {
                     aplicarFiltroEBusca();
                 }
@@ -1926,12 +1920,11 @@ async function favoritarArquivo(id, favorito) {
     }, favorito ? 'Adicionando aos favoritos...' : 'Removendo dos favoritos...');
 }
 
-   function abrirMoverModal(arquivoId) {
+function abrirMoverModal(arquivoId) {
     arquivoParaMover = arquivoId;
     const select = document.getElementById('pastaDestinoSelect');
     
     select.innerHTML = '';
-    
     select.innerHTML += '<option value=""><i class="fas fa-folder"></i> Raiz (sem pasta)</option>';
     
     function adicionarPastasRecursivo(pastas, pastaPaiId = null, nivel = 0) {
@@ -1941,9 +1934,7 @@ async function favoritarArquivo(id, favorito) {
         
         pastasNesteNivel.forEach(pasta => {
             const indentacao = nivel > 0 ? '　'.repeat(nivel) + '└─ ' : '';
-            
             select.innerHTML += `<option value="${pasta.id}">${indentacao}<i class="fas fa-folder"></i> ${pasta.nome}</option>`;
-            
             adicionarPastasRecursivo(pastas, pasta.id, nivel + 1);
         });
     }
@@ -1959,8 +1950,6 @@ async function favoritarArquivo(id, favorito) {
     toggleBodyScroll(true);
 }
 
-
-
 function fecharMoverModal() {
     document.getElementById('moverModal').classList.remove('active');
     arquivoParaMover = null;
@@ -1971,6 +1960,8 @@ async function confirmarMover() {
     if (!arquivoParaMover) return;
     
     const pastaDestino = document.getElementById('pastaDestinoSelect').value;
+    
+    manterModalAberto = true;
     
     await withSpinner(async () => {
         try {
@@ -1983,10 +1974,15 @@ async function confirmarMover() {
             if (response.ok) {
                 fecharMoverModal();
                 
-                await carregarArquivos();
+                const index = todosArquivos.findIndex(a => a.id === arquivoParaMover);
+                if (index !== -1) {
+                    todosArquivos[index].pasta_id = pastaDestino || null;
+                }
                 
                 if (pastaModalAtual) {
-                    await abrirModalPasta(pastaModalAtual);
+                    await atualizarConteudoModal(pastaModalAtual);
+                } else {
+                    aplicarFiltroEBusca();
                 }
                 
                 mostrarNotificacao('Arquivo movido com sucesso');
@@ -1998,12 +1994,14 @@ async function confirmarMover() {
             alert('Erro ao mover arquivo');
         }
     }, 'Movendo arquivo...');
+    
+    manterModalAberto = false;
 }
 
-    function getNomeOriginalParaDownload(nomeArquivo) {
-        const arquivo = todosArquivos.find(a => a.nome_arquivo === nomeArquivo);
-        return arquivo ? arquivo.nome_original : nomeArquivo.split('-').slice(1).join('-') || nomeArquivo;
-    }
+function getNomeOriginalParaDownload(nomeArquivo) {
+    const arquivo = todosArquivos.find(a => a.nome_arquivo === nomeArquivo);
+    return arquivo ? arquivo.nome_original : nomeArquivo.split('-').slice(1).join('-') || nomeArquivo;
+}
 
 function abrirArquivo(nomeArquivo, tipo) {
     const url = `${API_URL}/uploads/${nomeArquivo}`;
@@ -2021,7 +2019,6 @@ function abrirArquivo(nomeArquivo, tipo) {
         window.open(url, '_blank');
     } else if (tipo === 'video') {
         const extensao = nomeArquivo.split('.').pop().toLowerCase();
-        
         const formatosReproduziveis = ['mp4', 'webm', 'ogg', 'mov'];
         
         if (formatosReproduziveis.includes(extensao)) {
@@ -2038,77 +2035,75 @@ function abrirArquivo(nomeArquivo, tipo) {
     }
 }
 
-    function baixarArquivo(nomeArquivo) {
-        const url = `${API_URL}/uploads/${nomeArquivo}`;
-        const nomeOriginal = getNomeOriginalParaDownload(nomeArquivo);
-        
-        fetch(url)
-            .then(response => response.blob())
-            .then(blob => {
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(blob);
-                link.download = nomeOriginal;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                URL.revokeObjectURL(link.href);
-            })
-            .catch(error => {
-                console.error('Erro ao baixar:', error);
-                alert('Erro ao baixar arquivo');
-            });
-    }
+function baixarArquivo(nomeArquivo) {
+    const url = `${API_URL}/uploads/${nomeArquivo}`;
+    const nomeOriginal = getNomeOriginalParaDownload(nomeArquivo);
+    
+    fetch(url)
+        .then(response => response.blob())
+        .then(blob => {
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = nomeOriginal;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(link.href);
+        })
+        .catch(error => {
+            console.error('Erro ao baixar:', error);
+            alert('Erro ao baixar arquivo');
+        });
+}
 
 function fecharModal() {
     document.getElementById('imagemModal').classList.remove('active');
     toggleBodyScroll(false);
 }
 
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            fecharModal();
-            fecharMoverModal();
-            fecharModalPasta();
-        }
-    });
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        fecharModal();
+        fecharMoverModal();
+        fecharModalPasta();
+    }
+});
 
 function logout() {
     localStorage.removeItem('usuario');
     window.location.href = 'index.html';
 }
 
-    const uploadArea = document.querySelector('.upload-area');
-    uploadArea.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        uploadArea.style.borderColor = '#b88b4a';
-        uploadArea.style.background = '#fcf9f4';
-    });
+const uploadArea = document.querySelector('.upload-area');
+uploadArea.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    uploadArea.style.borderColor = '#b88b4a';
+    uploadArea.style.background = '#fcf9f4';
+});
 
-    uploadArea.addEventListener('dragleave', (e) => {
-        e.preventDefault();
-        uploadArea.style.borderColor = '#eae5dd';
-        uploadArea.style.background = 'white';
-    });
+uploadArea.addEventListener('dragleave', (e) => {
+    e.preventDefault();
+    uploadArea.style.borderColor = '#eae5dd';
+    uploadArea.style.background = 'white';
+});
 
-    uploadArea.addEventListener('drop', (e) => {
-        e.preventDefault();
-        uploadArea.style.borderColor = '#eae5dd';
-        uploadArea.style.background = 'white';
-        const files = e.dataTransfer.files;
-        uploadArquivos(files);
-    });
+uploadArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadArea.style.borderColor = '#eae5dd';
+    uploadArea.style.background = 'white';
+    const files = e.dataTransfer.files;
+    uploadArquivos(files);
+});
 
-    function iniciarEdicao(arquivo) {
-        arquivoEditando = arquivo.id;
-        aplicarFiltroEBusca();
-    }
+function iniciarEdicao(arquivo) {
+    arquivoEditando = arquivo.id;
+    aplicarFiltroEBusca();
+}
 
-    function cancelarEdicao() {
-        arquivoEditando = null;
-        aplicarFiltroEBusca();
-    }
-
-    let arquivoComentarioAtual = null;
+function cancelarEdicao() {
+    arquivoEditando = null;
+    aplicarFiltroEBusca();
+}
 
 async function abrirComentarioModal(arquivoId, comentarioAtual = '') {
     arquivoComentarioAtual = arquivoId;
@@ -2132,7 +2127,7 @@ function fecharComentarioModal() {
     toggleBodyScroll(false);
 }
 
-    async function salvarComentario() {
+async function salvarComentario() {
     if (!arquivoComentarioAtual) return;
     
     manterModalAberto = true;
@@ -2155,7 +2150,7 @@ function fecharComentarioModal() {
                 fecharComentarioModal();
                 
                 if (pastaModalAtual) {
-                    await atualizarConteudoModal(pastaModalAtual); // MUDOU AQUI
+                    await atualizarConteudoModal(pastaModalAtual);
                 } else {
                     aplicarFiltroEBusca();
                 }
@@ -2174,7 +2169,7 @@ function fecharComentarioModal() {
 }
 
 async function downloadPasta(pastaId, pastaNome) {
-    manterModalAberto = true; // IMPEDE o modal de fechar
+    manterModalAberto = true;
     
     await withSpinner(async () => {
         try {
@@ -2203,12 +2198,12 @@ async function downloadPasta(pastaId, pastaNome) {
             console.error('Erro ao baixar pasta:', error);
             mostrarAlerta('Erro', error.message || 'Erro ao baixar pasta');
         } finally {
-            manterModalAberto = false; 
+            manterModalAberto = false;
         }
     }, 'Preparando download...');
 }
 
-  async function salvarEdicao(arquivoId, novoNome) {
+async function salvarEdicao(arquivoId, novoNome) {
     if (!novoNome.trim()) {
         mostrarAlerta('Erro', 'O nome do arquivo não pode estar vazio');
         return;
@@ -2227,11 +2222,17 @@ async function downloadPasta(pastaId, pastaNome) {
             });
 
             if (response.ok) {
+                const index = todosArquivos.findIndex(a => a.id === arquivoId);
+                if (index !== -1) {
+                    todosArquivos[index].nome_original = novoNome;
+                }
+                
                 arquivoEditando = null;
-                await carregarArquivos();
                 
                 if (pastaModalAtual) {
-                    await atualizarConteudoModal(pastaModalAtual); // MUDOU AQUI!
+                    await atualizarConteudoModal(pastaModalAtual);
+                } else {
+                    aplicarFiltroEBusca();
                 }
                 
                 mostrarNotificacao('Arquivo renomeado com sucesso');
@@ -2247,217 +2248,212 @@ async function downloadPasta(pastaId, pastaNome) {
     }, 'Renomeando arquivo...');
 }
 
-    let favoritosModalAberto = false;
+function mostrarFavoritos() {
+    favoritosModalAberto = true;
+    document.getElementById('favoritosModal').classList.add('active');
+    toggleBodyScroll(true);
+    carregarFavoritos();
+}
 
-    function mostrarFavoritos() {
-        favoritosModalAberto = true;
-        document.getElementById('favoritosModal').classList.add('active');
-        toggleBodyScroll(true);
-        carregarFavoritos();
-    }
+function fecharFavoritosModal() {
+    document.getElementById('favoritosModal').classList.remove('active');
+    favoritosModalAberto = false;
+    toggleBodyScroll(false);
+}
 
-    function fecharFavoritosModal() {
-        document.getElementById('favoritosModal').classList.remove('active');
-        favoritosModalAberto = false;
-        toggleBodyScroll(false);
-    }
-
-    async function carregarFavoritos() {
-        try {
-            const response = await fetch(`${API_URL}/api/arquivos/${usuario.id}`);
-            if (!response.ok) {
-                throw new Error('Erro ao carregar arquivos');
-            }
-            const arquivos = await response.json();
-            const favoritos = arquivos.filter(a => a.favorito === 1 || a.favorito === true);
-            renderizarFavoritos(favoritos);
-            atualizarContadorFavoritos(favoritos.length);
-        } catch (error) {
-            console.error('Erro ao carregar favoritos:', error);
-            document.getElementById('favoritosModalBody').innerHTML = '<div class="empty-state">Erro ao carregar favoritos</div>';
+async function carregarFavoritos() {
+    try {
+        const response = await fetch(`${API_URL}/api/arquivos/${usuario.id}`);
+        if (!response.ok) {
+            throw new Error('Erro ao carregar arquivos');
         }
+        const arquivos = await response.json();
+        const favoritos = arquivos.filter(a => a.favorito === 1 || a.favorito === true);
+        renderizarFavoritos(favoritos);
+        atualizarContadorFavoritos(favoritos.length);
+    } catch (error) {
+        console.error('Erro ao carregar favoritos:', error);
+        document.getElementById('favoritosModalBody').innerHTML = '<div class="empty-state">Erro ao carregar favoritos</div>';
     }
+}
 
-    function renderizarFavoritos(favoritos) {
-        const container = document.getElementById('favoritosModalBody');
-        
-        if (favoritos.length === 0) {
-            container.innerHTML = '<div class="empty-state">Nenhum arquivo favoritado</div>';
-            return;
+function renderizarFavoritos(favoritos) {
+    const container = document.getElementById('favoritosModalBody');
+    
+    if (favoritos.length === 0) {
+        container.innerHTML = '<div class="empty-state">Nenhum arquivo favoritado</div>';
+        return;
+    }
+    
+    totalFavoritos = favoritos.length;
+    
+    const inicio = (favoritosPaginaAtual - 1) * favoritosItensPorPagina;
+    const fim = inicio + favoritosItensPorPagina;
+    const favoritosPaginados = favoritos.slice(inicio, fim);
+    
+    let html = '<div class="arquivos-grid">';
+    
+    favoritosPaginados.forEach(arquivo => {
+        let icone = 'fa-file';
+        let classeCor = 'outros';
+
+        if (arquivo.tipo_arquivo === 'imagem') {
+            icone = 'fa-file-image';
+            classeCor = 'imagem';
+        } else if (arquivo.tipo_arquivo === 'pdf') {
+            icone = 'fa-file-pdf';
+            classeCor = 'pdf';
+        } else if (arquivo.tipo_arquivo === 'word') {
+            icone = 'fa-file-word';
+            classeCor = 'word';
+        } else if (arquivo.tipo_arquivo === 'excel') {
+            icone = 'fa-file-excel';
+            classeCor = 'excel';
+        } else if (arquivo.tipo_arquivo === 'powerpoint') {
+            icone = 'fa-file-powerpoint';
+            classeCor = 'powerpoint';
+        } else if (arquivo.tipo_arquivo === 'video') {  
+            icone = 'fa-file-video';                    
+            classeCor = 'video';                          
+        } else if (arquivo.tipo_arquivo === 'texto') {
+            icone = 'fa-file-alt';
+            classeCor = 'texto';
         }
         
-        totalFavoritos = favoritos.length;
+        const tamanho = (arquivo.tamanho / 1024).toFixed(2) + ' KB';
+        const data = new Date(arquivo.data_upload).toLocaleDateString('pt-BR');
+        const url = `${API_URL}/uploads/${arquivo.nome_arquivo}`;
         
-        const inicio = (favoritosPaginaAtual - 1) * favoritosItensPorPagina;
-        const fim = inicio + favoritosItensPorPagina;
-        const favoritosPaginados = favoritos.slice(inicio, fim);
+        let previewHtml = '';
+        if (arquivo.tipo_arquivo === 'imagem') {
+            previewHtml = `<div class="imagem-preview" onclick="abrirArquivo('${arquivo.nome_arquivo}', '${arquivo.tipo_arquivo}')"><img src="${url}" alt="${arquivo.nome_original}"></div>`;
+        }
         
-        let html = '<div class="arquivos-grid">';
-        
-        favoritosPaginados.forEach(arquivo => {
-            let icone = 'fa-file';
-            let classeCor = 'outros';
-
-            if (arquivo.tipo_arquivo === 'imagem') {
-                icone = 'fa-file-image';
-                classeCor = 'imagem';
-            } else if (arquivo.tipo_arquivo === 'pdf') {
-                icone = 'fa-file-pdf';
-                classeCor = 'pdf';
-            } else if (arquivo.tipo_arquivo === 'word') {
-                icone = 'fa-file-word';
-                classeCor = 'word';
-            } else if (arquivo.tipo_arquivo === 'excel') {
-                icone = 'fa-file-excel';
-                classeCor = 'excel';
-            } else if (arquivo.tipo_arquivo === 'powerpoint') {
-                icone = 'fa-file-powerpoint';
-                classeCor = 'powerpoint';
-            }  else if (arquivo.tipo_arquivo === 'video') {  
-                icone = 'fa-file-video';                    
-                classeCor = 'video';                          
-            } else if (arquivo.tipo_arquivo === 'texto') {
-                icone = 'fa-file-alt';
-                classeCor = 'texto';
-            }
-            
-            const tamanho = (arquivo.tamanho / 1024).toFixed(2) + ' KB';
-            const data = new Date(arquivo.data_upload).toLocaleDateString('pt-BR');
-            const url = `${API_URL}/uploads/${arquivo.nome_arquivo}`;
-            
-            let previewHtml = '';
-            if (arquivo.tipo_arquivo === 'imagem') {
-                previewHtml = `<div class="imagem-preview" onclick="abrirArquivo('${arquivo.nome_arquivo}', '${arquivo.tipo_arquivo}')"><img src="${url}" alt="${arquivo.nome_original}"></div>`;
-            }
-            
-            html += `
-                <div class="arquivo-card ${arquivo.tipo_arquivo === 'imagem' ? 'com-imagem' : ''}">
-                    <div class="card-header">
-                        <div class="header-actions">
-                            <button class="favorito-btn active" onclick="favoritarArquivo(${arquivo.id}, false)">
-                                <i class="fas fa-star" style="color: #FFD700"></i>
-                            </button>
-                            <button class="comentario-btn ${arquivo.comentario ? 'active' : ''}" onclick="event.stopPropagation(); abrirComentarioModal(${arquivo.id})" title="${arquivo.comentario ? 'Editar comentário' : 'Adicionar comentário'}"><i class="fas fa-comment"></i></button>
-                            <button class="delete-btn" onclick="deletarArquivo(${arquivo.id})" title="Excluir"><i class="fas fa-times"></i></button>
-                        </div>
-                    </div>
-                    ${previewHtml || `<div class="arquivo-icone ${classeCor}"><i class="fas ${icone} fa-2x"></i></div>`}
-                    <div class="arquivo-info">
-                        <h3>${arquivo.nome_original}</h3>
-                        <span class="arquivo-tipo tipo-${arquivo.tipo_arquivo}">${arquivo.tipo_arquivo}</span>
-                        <div class="arquivo-meta">
-                            <span>${tamanho}</span>
-                            <span>${data}</span>
-                        </div>
-                    </div>
-                    <div class="arquivo-acoes">
-                        <button class="btn-abrir" onclick="abrirArquivo('${arquivo.nome_arquivo}', '${arquivo.tipo_arquivo}')"><i class="fas fa-eye"></i> Abrir</button>
-                        <button class="btn-baixar" onclick="baixarArquivo('${arquivo.nome_arquivo}')"><i class="fas fa-download"></i> Baixar</button>
-                        <button class="btn-mover" onclick="abrirMoverModal(${arquivo.id})"><i class="fas fa-folder-open"></i> Mover</button>
+        html += `
+            <div class="arquivo-card ${arquivo.tipo_arquivo === 'imagem' ? 'com-imagem' : ''}">
+                <div class="card-header">
+                    <div class="header-actions">
+                        <button class="favorito-btn active" onclick="favoritarArquivo(${arquivo.id}, false)">
+                            <i class="fas fa-star" style="color: #FFD700"></i>
+                        </button>
+                        <button class="comentario-btn ${arquivo.comentario ? 'active' : ''}" onclick="event.stopPropagation(); abrirComentarioModal(${arquivo.id})" title="${arquivo.comentario ? 'Editar comentário' : 'Adicionar comentário'}"><i class="fas fa-comment"></i></button>
+                        <button class="delete-btn" onclick="deletarArquivo(${arquivo.id})" title="Excluir"><i class="fas fa-times"></i></button>
                     </div>
                 </div>
-            `;
-        });
-        
-        html += '</div>';
-        
-        if (favoritos.length > favoritosItensPorPagina) {
-            html += renderizarFavoritosPaginacao();
-        }
-        
-        container.innerHTML = html;
-    }
-
-    function renderizarFavoritosPaginacao() {
-        const totalPaginas = Math.ceil(totalFavoritos / favoritosItensPorPagina);
-        
-        const inicio = (favoritosPaginaAtual - 1) * favoritosItensPorPagina + 1;
-        const fim = Math.min(favoritosPaginaAtual * favoritosItensPorPagina, totalFavoritos);
-        
-        let paginacaoHtml = `
-            <div class="paginacao-container" style="margin-top: 1rem;">
-                <div class="paginacao-controles">
-                    <span class="paginacao-info">
-                        <i class="fas fa-star"></i> ${inicio}-${fim} de ${totalFavoritos}
-                    </span>
-                    
-                    <button class="paginacao-btn" onclick="mudarPaginaFavoritos(1)" ${favoritosPaginaAtual === 1 ? 'disabled' : ''}>
-                        <i class="fas fa-angle-double-left"></i>
-                    </button>
-                    
-                    <button class="paginacao-btn" onclick="mudarPaginaFavoritos(${favoritosPaginaAtual - 1})" ${favoritosPaginaAtual === 1 ? 'disabled' : ''}>
-                        <i class="fas fa-angle-left"></i>
-                    </button>
-        `;
-        
-        let inicioRange = Math.max(1, favoritosPaginaAtual - 2);
-        let fimRange = Math.min(totalPaginas, favoritosPaginaAtual + 2);
-        
-        if (inicioRange > 1) {
-            paginacaoHtml += `
-                <button class="paginacao-btn" onclick="mudarPaginaFavoritos(1)">1</button>
-                ${inicioRange > 2 ? '<span class="paginacao-btn" style="border: none; background: none;">...</span>' : ''}
-            `;
-        }
-        
-        for (let i = inicioRange; i <= fimRange; i++) {
-            paginacaoHtml += `
-                <button class="paginacao-btn ${i === favoritosPaginaAtual ? 'active' : ''}" onclick="mudarPaginaFavoritos(${i})">${i}</button>
-            `;
-        }
-        
-        if (fimRange < totalPaginas) {
-            paginacaoHtml += `
-                ${fimRange < totalPaginas - 1 ? '<span class="paginacao-btn" style="border: none; background: none;">...</span>' : ''}
-                <button class="paginacao-btn" onclick="mudarPaginaFavoritos(${totalPaginas})">${totalPaginas}</button>
-            `;
-        }
-        
-        paginacaoHtml += `
-                    <button class="paginacao-btn" onclick="mudarPaginaFavoritos(${favoritosPaginaAtual + 1})" ${favoritosPaginaAtual === totalPaginas ? 'disabled' : ''}>
-                        <i class="fas fa-angle-right"></i>
-                    </button>
-                    
-                    <button class="paginacao-btn" onclick="mudarPaginaFavoritos(${totalPaginas})" ${favoritosPaginaAtual === totalPaginas ? 'disabled' : ''}>
-                        <i class="fas fa-angle-double-right"></i>
-                    </button>
+                ${previewHtml || `<div class="arquivo-icone ${classeCor}"><i class="fas ${icone} fa-2x"></i></div>`}
+                <div class="arquivo-info">
+                    <h3>${arquivo.nome_original}</h3>
+                    <span class="arquivo-tipo tipo-${arquivo.tipo_arquivo}">${arquivo.tipo_arquivo}</span>
+                    <div class="arquivo-meta">
+                        <span>${tamanho}</span>
+                        <span>${data}</span>
+                    </div>
+                </div>
+                <div class="arquivo-acoes">
+                    <button class="btn-abrir" onclick="abrirArquivo('${arquivo.nome_arquivo}', '${arquivo.tipo_arquivo}')"><i class="fas fa-eye"></i> Abrir</button>
+                    <button class="btn-baixar" onclick="baixarArquivo('${arquivo.nome_arquivo}')"><i class="fas fa-download"></i> Baixar</button>
+                    <button class="btn-mover" onclick="abrirMoverModal(${arquivo.id})"><i class="fas fa-folder-open"></i> Mover</button>
                 </div>
             </div>
         `;
-        
-        return paginacaoHtml;
-    }
-
-    function mudarPaginaFavoritos(novaPagina) {
-        favoritosPaginaAtual = novaPagina;
-        carregarFavoritos();
-    }
-
-    function atualizarContadorFavoritos(count) {
-        const contador = document.getElementById('favoritosCount');
-        if (contador) {
-            contador.textContent = count;
-        }
-    }
-
-    let userMenuAberto = false;
-    let perfilEditando = false;
-
-    function toggleUserMenu() {
-        const menu = document.getElementById('userMenu');
-        userMenuAberto = !userMenuAberto;
-        menu.style.display = userMenuAberto ? 'block' : 'none';
-    }
-
-    document.addEventListener('click', function(e) {
-        if (!e.target.closest('.user-info')) {
-            const menu = document.getElementById('userMenu');
-            if (menu) {
-                menu.style.display = 'none';
-                userMenuAberto = false;
-            }
-        }
     });
+    
+    html += '</div>';
+    
+    if (favoritos.length > favoritosItensPorPagina) {
+        html += renderizarFavoritosPaginacao();
+    }
+    
+    container.innerHTML = html;
+}
+
+function renderizarFavoritosPaginacao() {
+    const totalPaginas = Math.ceil(totalFavoritos / favoritosItensPorPagina);
+    
+    const inicio = (favoritosPaginaAtual - 1) * favoritosItensPorPagina + 1;
+    const fim = Math.min(favoritosPaginaAtual * favoritosItensPorPagina, totalFavoritos);
+    
+    let paginacaoHtml = `
+        <div class="paginacao-container" style="margin-top: 1rem;">
+            <div class="paginacao-controles">
+                <span class="paginacao-info">
+                    <i class="fas fa-star"></i> ${inicio}-${fim} de ${totalFavoritos}
+                </span>
+                
+                <button class="paginacao-btn" onclick="mudarPaginaFavoritos(1)" ${favoritosPaginaAtual === 1 ? 'disabled' : ''}>
+                    <i class="fas fa-angle-double-left"></i>
+                </button>
+                
+                <button class="paginacao-btn" onclick="mudarPaginaFavoritos(${favoritosPaginaAtual - 1})" ${favoritosPaginaAtual === 1 ? 'disabled' : ''}>
+                    <i class="fas fa-angle-left"></i>
+                </button>
+    `;
+    
+    let inicioRange = Math.max(1, favoritosPaginaAtual - 2);
+    let fimRange = Math.min(totalPaginas, favoritosPaginaAtual + 2);
+    
+    if (inicioRange > 1) {
+        paginacaoHtml += `
+            <button class="paginacao-btn" onclick="mudarPaginaFavoritos(1)">1</button>
+            ${inicioRange > 2 ? '<span class="paginacao-btn" style="border: none; background: none;">...</span>' : ''}
+        `;
+    }
+    
+    for (let i = inicioRange; i <= fimRange; i++) {
+        paginacaoHtml += `
+            <button class="paginacao-btn ${i === favoritosPaginaAtual ? 'active' : ''}" onclick="mudarPaginaFavoritos(${i})">${i}</button>
+        `;
+    }
+    
+    if (fimRange < totalPaginas) {
+        paginacaoHtml += `
+            ${fimRange < totalPaginas - 1 ? '<span class="paginacao-btn" style="border: none; background: none;">...</span>' : ''}
+            <button class="paginacao-btn" onclick="mudarPaginaFavoritos(${totalPaginas})">${totalPaginas}</button>
+        `;
+    }
+    
+    paginacaoHtml += `
+                <button class="paginacao-btn" onclick="mudarPaginaFavoritos(${favoritosPaginaAtual + 1})" ${favoritosPaginaAtual === totalPaginas ? 'disabled' : ''}>
+                    <i class="fas fa-angle-right"></i>
+                </button>
+                
+                <button class="paginacao-btn" onclick="mudarPaginaFavoritos(${totalPaginas})" ${favoritosPaginaAtual === totalPaginas ? 'disabled' : ''}>
+                    <i class="fas fa-angle-double-right"></i>
+                </button>
+            </div>
+        </div>
+    `;
+    
+    return paginacaoHtml;
+}
+
+function mudarPaginaFavoritos(novaPagina) {
+    favoritosPaginaAtual = novaPagina;
+    carregarFavoritos();
+}
+
+function atualizarContadorFavoritos(count) {
+    const contador = document.getElementById('favoritosCount');
+    if (contador) {
+        contador.textContent = count;
+    }
+}
+
+function toggleUserMenu() {
+    const menu = document.getElementById('userMenu');
+    userMenuAberto = !userMenuAberto;
+    menu.style.display = userMenuAberto ? 'block' : 'none';
+}
+
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.user-info')) {
+        const menu = document.getElementById('userMenu');
+        if (menu) {
+            menu.style.display = 'none';
+            userMenuAberto = false;
+        }
+    }
+});
 
 function abrirModalUsuario() {
     document.getElementById('usuarioModal').classList.add('active');
@@ -2473,25 +2469,25 @@ function abrirModalUsuario() {
     toggleBodyScroll(true);
 }
 
-    function fecharModalUsuario() {
-        document.getElementById('usuarioModal').classList.remove('active');
-        perfilEditando = false;
-        toggleBodyScroll(false);
-    }
+function fecharModalUsuario() {
+    document.getElementById('usuarioModal').classList.remove('active');
+    perfilEditando = false;
+    toggleBodyScroll(false);
+}
 
-    function editarPerfil() {
-        document.getElementById('perfilVisualizacao').style.display = 'none';
-        document.getElementById('perfilEdicao').style.display = 'block';
-        perfilEditando = true;
-    }
+function editarPerfil() {
+    document.getElementById('perfilVisualizacao').style.display = 'none';
+    document.getElementById('perfilEdicao').style.display = 'block';
+    perfilEditando = true;
+}
 
-    function cancelarEdicaoPerfil() {
-        document.getElementById('perfilVisualizacao').style.display = 'block';
-        document.getElementById('perfilEdicao').style.display = 'none';
-        perfilEditando = false;
-    }
+function cancelarEdicaoPerfil() {
+    document.getElementById('perfilVisualizacao').style.display = 'block';
+    document.getElementById('perfilEdicao').style.display = 'none';
+    perfilEditando = false;
+}
 
- async function salvarPerfil() {
+async function salvarPerfil() {
     const novoNome = document.getElementById('editNome').value;
     const novoEmail = document.getElementById('editEmail').value;
     const novaSenha = document.getElementById('editSenha').value;
@@ -2533,11 +2529,7 @@ function abrirModalUsuario() {
     }, 'Salvando perfil...');
 }
 
-    carregarDados();
-
-    let confirmCallback = null;
-    let promptCallback = null;
-    let currentPromptValue = '';
+carregarDados();
 
 function mostrarAlerta(titulo, mensagem) {
     document.getElementById('alertTitle').innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${titulo}`;
@@ -2578,7 +2570,7 @@ function executarConfirmAction() {
         confirmCallback();
     }
     fecharConfirmModal();
-    return false; 
+    return false;
 }
 
 function mostrarPrompt(titulo, mensagem, valorPadrao = '', callback) {
@@ -2597,19 +2589,19 @@ function fecharPromptModal() {
     toggleBodyScroll(false);
 }
 
-    function executarPromptAction() {
-        if (promptCallback) {
-            promptCallback(document.getElementById('promptInput').value);
-        }
-        fecharPromptModal();
+function executarPromptAction() {
+    if (promptCallback) {
+        promptCallback(document.getElementById('promptInput').value);
     }
+    fecharPromptModal();
+}
 
-    function abrirConfiguracoes() {
-        mostrarAlerta('Configurações', 'Página em desenvolvimento');
-        toggleUserMenu();
-    }
+function abrirConfiguracoes() {
+    mostrarAlerta('Configurações', 'Página em desenvolvimento');
+    toggleUserMenu();
+}
 
-    function toggleBodyScroll(bloquear) {
+function toggleBodyScroll(bloquear) {
     const body = document.body;
     if (bloquear) {
         const scrollY = window.scrollY;
@@ -2627,25 +2619,24 @@ function fecharPromptModal() {
     }
 }
 
-
- function alternarTema() {
-        const body = document.body;
-        const temaBtn = document.getElementById('temaBtn');
-        const temaIcone = document.getElementById('temaIcone');
-        const temaTexto = document.getElementById('temaTexto');
-        
-        body.classList.toggle('dark-mode');
-        
-        if (body.classList.contains('dark-mode')) {
-            temaIcone.className = 'fas fa-sun';
-            temaTexto.innerText = 'Claro';
-            localStorage.setItem('tema', 'escuro');
-        } else {
-            temaIcone.className = 'fas fa-moon';
-            temaTexto.innerText = 'Escuro';
-            localStorage.setItem('tema', 'claro');
-        }
+function alternarTema() {
+    const body = document.body;
+    const temaBtn = document.getElementById('temaBtn');
+    const temaIcone = document.getElementById('temaIcone');
+    const temaTexto = document.getElementById('temaTexto');
+    
+    body.classList.toggle('dark-mode');
+    
+    if (body.classList.contains('dark-mode')) {
+        temaIcone.className = 'fas fa-sun';
+        temaTexto.innerText = 'Claro';
+        localStorage.setItem('tema', 'escuro');
+    } else {
+        temaIcone.className = 'fas fa-moon';
+        temaTexto.innerText = 'Escuro';
+        localStorage.setItem('tema', 'claro');
     }
+}
 
 function mostrarTiposSuportados() {
     const tipos = {
@@ -2719,7 +2710,7 @@ function mostrarTiposSuportados() {
                 { ext: '3GP', desc: '3GPP Multimedia' }
             ]
         },
-                'Código/Texto': {
+        'Código/Texto': {
             icone: 'fa-code',
             cores: '#f56565',
             formatos: [
@@ -2750,21 +2741,21 @@ function mostrarTiposSuportados() {
     };
 
     let html = `
-<div style="max-height: 60vh; overflow-y: auto; padding-right: 0.5rem;">
-    <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem;">
-        <div style="background: #2b8ac1; color: white; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.9rem;">
-            <i class="fas fa-check-circle"></i> 50+ formatos suportados
+        <div style="max-height: 60vh; overflow-y: auto; padding-right: 0.5rem;">
+            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem;">
+                <div style="background: #2b8ac1; color: white; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.9rem;">
+                    <i class="fas fa-check-circle"></i> 50+ formatos suportados
+                </div>
+                <div style="background: #c44536; color: white; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.9rem;">
+                    <i class="fas fa-cloud-upload-alt"></i> Upload fácil
+                </div>
+                <div style="background: #38a169; color: white; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.9rem;">
+                    <i class="fas fa-shield-alt"></i> Máx 1GB
+                </div>
+            </div>
         </div>
-        <div style="background: #c44536; color: white; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.9rem;">
-            <i class="fas fa-cloud-upload-alt"></i> Upload fácil
-        </div>
-        <div style="background: #38a169; color: white; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.9rem;">
-            <i class="fas fa-shield-alt"></i> Máx 1GB
-        </div>
-    </div>
-</div>
-            
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem;">
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem;">
     `;
 
     for (const [categoria, dados] of Object.entries(tipos)) {
@@ -2824,20 +2815,22 @@ function mostrarTiposSuportados() {
     toggleBodyScroll(true);
 }
 
-    document.addEventListener('DOMContentLoaded', function() {
-        const temaSalvo = localStorage.getItem('tema');
-        const body = document.body;
-        const temaIcone = document.getElementById('temaIcone');
-        const temaTexto = document.getElementById('temaTexto');
-        
-        if (temaSalvo === 'escuro') {
-            body.classList.add('dark-mode');
-            temaIcone.className = 'fas fa-sun';
-            temaTexto.innerText = 'Claro';
-        } else {
-            temaIcone.className = 'fas fa-moon';
-            temaTexto.innerText = 'Escuro';
-        }
-    });
-
+document.addEventListener('DOMContentLoaded', function() {
+    const temaSalvo = localStorage.getItem('tema');
+    const body = document.body;
+    const temaIcone = document.getElementById('temaIcone');
+    const temaTexto = document.getElementById('temaTexto');
     
+    if (temaSalvo === 'escuro') {
+        body.classList.add('dark-mode');
+        temaIcone.className = 'fas fa-sun';
+        temaTexto.innerText = 'Claro';
+    } else {
+        temaIcone.className = 'fas fa-moon';
+        temaTexto.innerText = 'Escuro';
+    }
+});
+
+function toggleMenu() {
+    document.querySelector('.nav-actions').classList.toggle('show');
+}

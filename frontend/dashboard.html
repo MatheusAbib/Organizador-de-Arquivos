@@ -11,6 +11,9 @@
 <body>
 <div class="navbar">
     <h1><i class="fas fa-folder-tree"></i> Organizador de Arquivos</h1>
+    <button class="menu-hamburguer" onclick="toggleMenu()">
+    <i class="fas fa-bars"></i>
+    </button>
     <div class="nav-actions">
         <button class="tema-btn" onclick="alternarTema()" id="temaBtn" title="Alternar modo claro/escuro">
             <i class="fas fa-moon" id="temaIcone"></i> <span id="temaTexto">Escuro</span>
@@ -59,18 +62,24 @@
                 <button class="modal-header-btn primary" onclick="editarPerfil()" style="display: flex; justify-content: center; align-items: center; width: 55%; margin: 0 auto;"><i class="fas fa-edit"></i> Editar perfil</button>
             </div>
             <div id="perfilEdicao" style="display: none;">
-                <div style="margin-bottom: 1rem;">
+                <div style="margin-bottom: 1rem; position: relative;">
+                    <i class="fas fa-user" style="position: absolute; left: 15px; top: 42px; color: var(--icon-color); z-index: 1;"></i>
                     <label style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary);">Nome</label>
-                    <input type="text" id="editNome" class="busca-input" style="width: 100%;">
+                    <input type="text" id="editNome" class="busca-input" style="width: 100%; padding-left: 45px;">
                 </div>
-                <div style="margin-bottom: 1rem;">
+                
+                <div style="margin-bottom: 1rem; position: relative;">
+                    <i class="fas fa-envelope" style="position: absolute; left: 15px; top: 42px; color: var(--icon-color); z-index: 1;"></i>
                     <label style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary);">Email</label>
-                    <input type="email" id="editEmail" class="busca-input" style="width: 100%;">
+                    <input type="email" id="editEmail" class="busca-input" style="width: 100%; padding-left: 45px;">
                 </div>
-                <div style="margin-bottom: 1.5rem;">
+                
+                <div style="margin-bottom: 1.5rem; position: relative;">
+                    <i class="fas fa-lock" style="position: absolute; left: 15px; top: 42px; color: var(--icon-color); z-index: 1;"></i>
                     <label style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary);">Nova senha</label>
-                    <input type="password" id="editSenha" class="busca-input" style="width: 100%;" placeholder="Deixe em branco para manter a atual">
+                    <input type="password" id="editSenha" class="busca-input" style="width: 100%; padding-left: 45px;" placeholder="Deixe em branco para manter a atual">
                 </div>
+                
                 <div style="display: flex; gap: 1rem;">
                     <button class="modal-header-btn primary" id="salvarperfil" onclick="salvarPerfil()" style="flex: 1;"><i class="fas fa-check"></i> Salvar</button>
                     <button class="modal-header-btn secondary" onclick="cancelarEdicaoPerfil()" style="flex: 1;"><i class="fas fa-times"></i> Cancelar</button>
@@ -79,7 +88,6 @@
         </div>
     </div>
 </div>
-
 <div class="modal" id="favoritosModal">
     <div class="modal-content" style="max-width: 800px;">
         <div class="modal-header">
@@ -141,7 +149,7 @@
         <div class="toolbar">
             <div class="busca-container" style="position: relative;">
                 <i class="fas fa-search" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--text-muted); z-index: 1;"></i>
-                <input type="text" id="buscaInput" placeholder="Buscar arquivos pelo nome..." class="busca-input" onkeyup="buscarArquivos()" style="width: 100%; padding: 0.8rem 40px 0.8rem 45px;">
+                <input type="text" id="buscaInput" placeholder="Buscar arquivos pelo nome..." class="busca-input" onkeyup="buscarArquivos()">
                 <button id="limparBuscaBtn" class="limpar-busca-btn" onclick="limparBusca()" style="display: none;">
                     <i class="fas fa-times"></i>
                 </button>
@@ -278,7 +286,7 @@
                 <button class="modal-header-btn secondary" onclick="fecharConfirmModal()" type="button">
                     <i class="fas fa-times"></i> Cancelar
                 </button>
-                <button class="modal-header-btn primary" id="confirmActionBtn" onclick="executarConfirmAction()" type="button">
+            <button class="modal-header-btn primary" id="confirmActionBtn" onclick="executarConfirmAction()" type="button">
                     <i class="fas fa-check"></i> Confirmar
                 </button>
             </div>
@@ -491,6 +499,7 @@
 </footer>
 
 <script src="./script.js"></script>
+
 
 </body>
 </html>
