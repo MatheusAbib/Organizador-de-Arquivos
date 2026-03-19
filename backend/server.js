@@ -29,14 +29,10 @@ app.get('/admin.html', (req, res) => {
 });
 
 
-// app.get('/', (req, res) => {
-//     res.sendFile(path.join(__dirname, '../frontend/index.html'));
-// });
-
-app.get('*.html', (req, res) => {
-    const page = req.path.substring(1); 
-    res.sendFile(path.join(__dirname, '../frontend', page));
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/index.html'));
 });
+
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
