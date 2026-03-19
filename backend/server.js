@@ -29,9 +29,9 @@ app.get('/admin.html', (req, res) => {
 });
 
 
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '../frontend/index.html'));
-});
+// app.get('/', (req, res) => {
+//     res.sendFile(path.join(__dirname, '../frontend/index.html'));
+// });
 
 app.get('*.html', (req, res) => {
     const page = req.path.substring(1); 
