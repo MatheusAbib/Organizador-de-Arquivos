@@ -1268,21 +1268,22 @@ async function uploadArquivos(files) {
             }
         }
 
-        if (sucessos > 0) {
-            const response = await fetch(`${API_URL}/api/arquivos/${usuario.id}`);
-                if (response.ok) {
-                    todosArquivos = await response.json();
+                if (sucessos > 0) {
+                    const response = await fetch(`${API_URL}/api/arquivos/${usuario.id}`);
+                    if (response.ok) {
+                        todosArquivos = await response.json();
+                        aplicarFiltroEBusca(); 
+                    }
+                    if (pastaModalAtual) {
+                        await atualizarConteudoModal(pastaModalAtual);
+                    }
+                    
+                    let mensagem = `${sucessos} arquivo(s) enviado(s) com sucesso`;
+                    if (falhas > 0) {
+                        mensagem += `, ${falhas} falha(s)`;
+                    }
+                    mostrarNotificacao(mensagem);
                 }
-            if (pastaModalAtual) {
-                await atualizarConteudoModal(pastaModalAtual);
-            }
-            
-            let mensagem = `${sucessos} arquivo(s) enviado(s) com sucesso`;
-            if (falhas > 0) {
-                mensagem += `, ${falhas} falha(s)`;
-            }
-            mostrarNotificacao(mensagem);
-        }
     }, 'Enviando arquivos...');
 }
 
