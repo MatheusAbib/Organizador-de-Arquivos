@@ -990,9 +990,13 @@ async function criarPasta(pastaPaiId = null) {
                     const novaPasta = await response.json();
                     todasPastas.push(novaPasta);
                     
-                    renderizarPastas();
+                    renderizarPastas(); 
                     
                     if (pastaModalAtual) {
+                        await atualizarConteudoModal(pastaModalAtual);
+                    }
+                    
+                    if (pastaModalAtual === pastaPaiId) {
                         await atualizarConteudoModal(pastaModalAtual);
                     }
                     
@@ -1011,7 +1015,52 @@ async function criarPasta(pastaPaiId = null) {
 }
 
 function criarSubPasta(pastaId = null) {
-    criarPasta(pastaId || pastaModalAtual);
+    const pastaAlvo = pastaId || pastaModalAtual;
+    
+    mostrarPrompt('Nova Subpasta', 'Nome da nova subpasta:', '', async (nome) => {
+        if (!nome) return;
+        
+        manterModalAberto = true;
+        
+        await withSpinner(async () => {
+            try {
+                const response = await fetch(`${API_URL}/api/pastas`, { 
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        usuario_id: usuario.id,
+                        nome: nome,
+                        pasta_pai_id: pastaAlvo
+                    })
+                });
+                
+                if (response.ok) {
+                    if (pastaAlvo) {
+                        pastasExpandidas.add(pastaAlvo);
+                        salvarEstadoPastas();
+                    }
+                    
+                    const novaPasta = await response.json();
+                    todasPastas.push(novaPasta);
+                    
+                    renderizarPastas(); 
+                    
+                    if (pastaModalAtual) {
+                        await atualizarConteudoModal(pastaModalAtual);
+                    }
+                    
+                    mostrarNotificacao('Subpasta criada com sucesso!');
+                } else {
+                    mostrarAlerta('Erro', 'Erro ao criar subpasta');
+                }
+            } catch (error) {
+                console.error('Erro ao criar subpasta:', error);
+                mostrarAlerta('Erro', 'Erro ao criar subpasta');
+            }
+        }, 'Criando subpasta...');
+        
+        manterModalAberto = false;
+    });
 }
 
 function uploadParaPasta() {
