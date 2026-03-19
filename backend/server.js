@@ -27,25 +27,6 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use(express.static(path.join(__dirname, '../frontend')));
 
-// Rotas amigáveis (sem .html)
-app.get('/dashboard', (req, res) => {
-    res.sendFile(path.join(__dirname, '../frontend/dashboard.html'));
-});
-
-app.get('/admin', (req, res) => {
-    res.sendFile(path.join(__dirname, '../frontend/admin.html'));
-});
-
-// Rota raiz
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '../frontend/index.html'));
-});
-
-// Redirecionamento de URLs antigas com .html para as novas
-app.get('*.html', (req, res) => {
-    const newPath = req.path.replace('.html', '');
-    res.redirect(newPath);
-});
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
