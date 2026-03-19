@@ -637,13 +637,13 @@ h1, h2, h3, .serif-text {
                     
                     localStorage.setItem('usuario', JSON.stringify(data.usuario));
                     
-                    setTimeout(() => {
-                        if (data.usuario.tipo === 'admin') {
-                            window.location.href = '/admin';
-                        } else {
-                            window.location.href = '/dashboard';
-                        }
-                    }, 1500);
+                setTimeout(() => {
+                    if (data.usuario.tipo === 'admin') {
+                        window.location.href = '/admin';
+                    } else {
+                        window.location.href = '/dashboard';
+                    }
+                }, 1500);
                 } else {
                     messageDiv.className = 'message error';
                     messageDiv.textContent = data.error || 'Email ou senha inválidos';
