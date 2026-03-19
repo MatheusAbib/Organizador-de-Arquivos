@@ -1,2 +1,15 @@
 DirectoryIndex index.html
-Options +Indexes +FollowSymLinks
+Options +Indexes +FollowSymLinks -MultiViews
+
+RewriteEngine On
+
+RewriteRule ^$ /frontend/index.html [L]
+
+RewriteCond %{DOCUMENT_ROOT}/frontend/$1.html -f
+RewriteRule ^([^/]+)\.html$ /frontend/$1.html [L]
+
+RewriteCond %{DOCUMENT_ROOT}/frontend/$1 -f
+RewriteRule ^(.*\.(js|css|ico|png|jpg|jpeg|gif|svg))$ /frontend/$1 [L]
+
+RewriteCond %{DOCUMENT_ROOT}/frontend/$1.html -f
+RewriteRule ^([^/]+)$ /frontend/$1.html [L]
