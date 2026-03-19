@@ -39,11 +39,10 @@ destination: (req, file, cb) => {
     }
     cb(null, uploadDir);
 },
-    filename: (req, file, cb) => {
-        const nomeLimpo = file.originalname.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-        const uniqueName = Date.now() + '-' + nomeLimpo;
-        cb(null, uniqueName);
-    }
+filename: (req, file, cb) => {
+    const uniqueName = Date.now() + '-' + file.originalname;
+    cb(null, uniqueName);
+}
 });
 
 const upload = multer({ 
@@ -149,6 +148,7 @@ const db = mysql.createConnection({
     database: process.env.MYSQL_ADDON_DB,
     port: process.env.MYSQL_ADDON_PORT || 3306
 });
+
 
 db.connect((err) => {
     if (err) {

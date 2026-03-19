@@ -1,6 +1,8 @@
-const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:3000'  
     : 'https://app-fdeaa58d-ec6e-435f-9f32-f3ea2f463701.cleverapps.io';
+
+    
 
 let todosArquivos = [];
 let todasPastas = [];
@@ -41,6 +43,20 @@ let confirmCallback = null;
 let promptCallback = null;
 let currentPromptValue = '';
 
+let wordAtual = null;
+let wordHtmlAtual = '';
+
+
+let txtAtual = null;
+let excelAtual = null;
+
+let powerpointAtual = null;
+let powerpointViewer = null;
+let slideAtual = 1;
+let totalSlides = 0;
+
+
+
 const usuario = JSON.parse(localStorage.getItem('usuario'));
 if (!usuario) {
     window.location.href = 'index.html';
@@ -56,6 +72,104 @@ async function withSpinner(action, mensagem = 'Processando...') {
         esconderSpinner();
     }
 }
+
+
+async function abrirWordViewer(arquivo) {
+    wordAtual = arquivo;
+    document.getElementById('wordViewerTitle').textContent = arquivo.nome_original;
+    document.getElementById('wordViewerModal').classList.add('active'); 
+    toggleBodyScroll(true);
+    await carregarWordDocumento(arquivo);
+}
+
+async function carregarWordDocumento(arquivo) {
+    const viewerBody = document.getElementById('wordViewerBody');
+    const url = `${API_URL}/uploads/${arquivo.nome_arquivo}`;
+    
+    viewerBody.innerHTML = `
+        <div class="word-viewer-loading">
+            <div class="word-viewer-spinner"></div>
+            <p>Carregando documento...</p>
+        </div>
+    `;
+    
+    try {
+        const response = await fetch(url);
+        const arrayBuffer = await response.arrayBuffer();
+        
+        const result = await mammoth.convertToHtml({ 
+            arrayBuffer: arrayBuffer,
+            options: {
+                styleMap: [
+                    "p[style-name='Section Title'] => h1:fresh",
+                    "p[style-name='Subsection Title'] => h2:fresh"
+                ]
+            }
+        });
+        
+        wordHtmlAtual = result.value;
+        
+        viewerBody.innerHTML = result.value || '<p>Documento vazio</p>';
+        
+        if (result.messages.length > 0) {
+            console.log('Mensagens da conversão:', result.messages);
+        }
+        
+    } catch (error) {
+        console.error('Erro ao carregar documento Word:', error);
+        viewerBody.innerHTML = `
+            <div class="word-viewer-error">
+                <i class="fas fa-exclamation-triangle"></i>
+                <h3>Erro ao carregar documento</h3>
+                <p>${error.message || 'Não foi possível processar este arquivo.'}</p>
+                <p>Você pode tentar baixar o arquivo para visualizá-lo.</p>
+                <button class="word-viewer-btn primary" onclick="baixarWordAtual()" style="margin-top: 15px;">
+                    <i class="fas fa-download"></i> Baixar documento
+                </button>
+            </div>
+        `;
+    }
+}
+
+function fecharWordViewer() {
+    document.getElementById('wordViewerModal').classList.remove('active'); 
+    wordAtual = null;
+    wordHtmlAtual = '';
+    toggleBodyScroll(false);
+}
+
+
+function baixarWordAtual() {
+    if (wordAtual) {
+        baixarArquivo(wordAtual.nome_arquivo);
+    }
+}
+
+function imprimirWord() {
+    if (!wordHtmlAtual) return;
+    
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <html>
+            <head>
+                <title>${wordAtual?.nome_original || 'Documento'}</title>
+                <style>
+                    body { font-family: Arial, sans-serif; line-height: 1.6; padding: 40px; }
+                    img { max-width: 100%; height: auto; }
+                    table { border-collapse: collapse; width: 100%; margin: 15px 0; }
+                    td, th { border: 1px solid #ddd; padding: 8px; }
+                </style>
+            </head>
+            <body>
+                ${wordHtmlAtual}
+            </body>
+        </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+}
+
 
 function mostrarSpinner(mensagem) {
     let spinner = document.getElementById('globalSpinner');
@@ -1864,7 +1978,7 @@ async function deletarArquivo(id) {
                 }
                 
                 if (pastaModalAtual) {
-                    await atualizarConteudoModal(pastaModalAtual);  // ← ISSO ESTÁ CORRETO!
+                    await atualizarConteudoModal(pastaModalAtual); 
                 } else {
                     aplicarFiltroEBusca();
                 }
@@ -2003,96 +2117,133 @@ function getNomeOriginalParaDownload(nomeArquivo) {
     return arquivo ? arquivo.nome_original : nomeArquivo.split('-').slice(1).join('-') || nomeArquivo;
 }
 
-function abrirArquivo(nomeArquivo, tipo) {
-    const url = `${API_URL}/uploads/${nomeArquivo}`;
+window.abrirArquivo = function(nomeArquivo, tipo) {
+    let arquivo = null;
+    if (todosArquivos && todosArquivos.length > 0) {
+        arquivo = todosArquivos.find(a => a.nome_arquivo === nomeArquivo);
+    }
     
-    if (tipo === 'imagem') {
+    if (tipo === 'word' && arquivo) {
+        abrirWordViewer(arquivo);
+    } else if (tipo === 'texto' && arquivo) {
+        abrirTxtViewer(arquivo);
+    } else if (tipo === 'excel' && arquivo) {
+        abrirExcelViewer(arquivo);
+    } else if (tipo === 'powerpoint' && arquivo) {
+        abrirPowerpointViewer(arquivo);
+    } else if (tipo === 'imagem') {
         const modal = document.getElementById('imagemModal');
         const modalImg = document.getElementById('modalImagem');
-        modalImg.src = url;
+        modalImg.src = API_URL + '/uploads/' + nomeArquivo;
         modal.classList.add('active');
-    } else if (tipo === 'pdf') {
-        window.open(url, '_blank');
-    } else if (tipo === 'word' || tipo === 'excel' || tipo === 'powerpoint') {
-        window.open(`https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`, '_blank');
-    } else if (tipo === 'texto') {
-        window.open(url, '_blank');
-    } else if (tipo === 'video') {
-        const extensao = nomeArquivo.split('.').pop().toLowerCase();
-        const formatosReproduziveis = ['mp4', 'webm', 'ogg', 'mov'];
-        
-        if (formatosReproduziveis.includes(extensao)) {
-            window.open(url, '_blank');
-        } else {
-            mostrarConfirmacao(
-                'Formato não reproduzível', 
-                `O formato .${extensao} não pode ser reproduzido diretamente no navegador. Deseja baixar o arquivo?`, 
-                () => baixarArquivo(nomeArquivo)
-            );
-        }
+        toggleBodyScroll(true);
     } else {
-        window.open(url, '_blank');
+        const url = API_URL + '/uploads/' + nomeArquivo;
+        const googleViewerUrl = 'https://docs.google.com/viewer?url=' + encodeURIComponent(url) + '&embedded=true';
+        window.open(googleViewerUrl, '_blank');
     }
-}
+};
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        const wordModal = document.getElementById('wordViewerModal');
+        const txtModal = document.getElementById('txtViewerModal');
+        const excelModal = document.getElementById('excelViewerModal');
+        
+        if (wordModal && wordModal.style.display === 'block') {
+            fecharWordViewer();
+        } else if (txtModal && txtModal.style.display === 'block') {
+            fecharTxtViewer();
+        } else if (excelModal && excelModal.style.display === 'block') {
+            fecharExcelViewer();
+        }
+    }
+});
+
+document.addEventListener('click', function(e) {
+    const wordModal = document.getElementById('wordViewerModal');
+    const txtModal = document.getElementById('txtViewerModal');
+    const excelModal = document.getElementById('excelViewerModal');
+    
+    if (wordModal && e.target === wordModal) {
+        fecharWordViewer();
+    } else if (txtModal && e.target === txtModal) {
+        fecharTxtViewer();
+    } else if (excelModal && e.target === excelModal) {
+        fecharExcelViewer();
+    }
+});
 
 function baixarArquivo(nomeArquivo) {
-    const url = `${API_URL}/uploads/${nomeArquivo}`;
+    const url = API_URL + '/uploads/' + nomeArquivo;
     const nomeOriginal = getNomeOriginalParaDownload(nomeArquivo);
     
     fetch(url)
-        .then(response => response.blob())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Erro ao baixar arquivo');
+            }
+            return response.blob();
+        })
         .then(blob => {
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
             link.download = nomeOriginal;
             document.body.appendChild(link);
             link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(link.href);
+            setTimeout(() => {
+                document.body.removeChild(link);
+                URL.revokeObjectURL(link.href);
+            }, 100);
         })
         .catch(error => {
             console.error('Erro ao baixar:', error);
-            alert('Erro ao baixar arquivo');
+            if (typeof mostrarAlerta === 'function') {
+                mostrarAlerta('Erro', 'Erro ao baixar arquivo');
+            } else {
+                alert('Erro ao baixar arquivo');
+            }
         });
 }
 
 function fecharModal() {
-    document.getElementById('imagemModal').classList.remove('active');
+    const modal = document.getElementById('imagemModal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
     toggleBodyScroll(false);
 }
-
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-        fecharModal();
-        fecharMoverModal();
-        fecharModalPasta();
-    }
-});
 
 function logout() {
     localStorage.removeItem('usuario');
     window.location.href = 'index.html';
 }
 
-const uploadArea = document.querySelector('.upload-area');
-uploadArea.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    uploadArea.style.borderColor = '#b88b4a';
-    uploadArea.style.background = '#fcf9f4';
-});
+document.addEventListener('DOMContentLoaded', function() {
+    const uploadArea = document.querySelector('.upload-area');
+    if (uploadArea) {
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#b88b4a';
+            uploadArea.style.background = '#fcf9f4';
+        });
 
-uploadArea.addEventListener('dragleave', (e) => {
-    e.preventDefault();
-    uploadArea.style.borderColor = '#eae5dd';
-    uploadArea.style.background = 'white';
-});
+        uploadArea.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#eae5dd';
+            uploadArea.style.background = 'white';
+        });
 
-uploadArea.addEventListener('drop', (e) => {
-    e.preventDefault();
-    uploadArea.style.borderColor = '#eae5dd';
-    uploadArea.style.background = 'white';
-    const files = e.dataTransfer.files;
-    uploadArquivos(files);
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#eae5dd';
+            uploadArea.style.background = 'white';
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                uploadArquivos(files);
+            }
+        });
+    }
 });
 
 function iniciarEdicao(arquivo) {
@@ -2110,19 +2261,27 @@ async function abrirComentarioModal(arquivoId, comentarioAtual = '') {
     
     const arquivo = todosArquivos.find(a => a.id === arquivoId);
     
-    if (arquivo && arquivo.comentario) {
-        document.getElementById('comentarioTextarea').value = arquivo.comentario;
-    } else {
-        document.getElementById('comentarioTextarea').value = '';
+    const textarea = document.getElementById('comentarioTextarea');
+    if (textarea) {
+        textarea.value = (arquivo && arquivo.comentario) ? arquivo.comentario : '';
     }
     
-    document.getElementById('comentarioModal').classList.add('active');
+    const modal = document.getElementById('comentarioModal');
+    if (modal) {
+        modal.classList.add('active');
+    }
     toggleBodyScroll(true);
 }
 
 function fecharComentarioModal() {
-    document.getElementById('comentarioModal').classList.remove('active');
-    document.getElementById('comentarioTextarea').value = '';
+    const modal = document.getElementById('comentarioModal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+    const textarea = document.getElementById('comentarioTextarea');
+    if (textarea) {
+        textarea.value = '';
+    }
     arquivoComentarioAtual = null;
     toggleBodyScroll(false);
 }
@@ -2157,16 +2316,18 @@ async function salvarComentario() {
                 
                 mostrarNotificacao('Comentário salvo com sucesso');
             } else {
-                alert('Erro ao salvar comentário');
+                const data = await response.json();
+                mostrarAlerta('Erro', data.error || 'Erro ao salvar comentário');
             }
         } catch (error) {
             console.error('Erro ao salvar comentário:', error);
-            alert('Erro ao salvar comentário');
+            mostrarAlerta('Erro', 'Erro ao salvar comentário');
         } finally {
             manterModalAberto = false;
         }
     }, 'Salvando comentário...');
 }
+
 
 async function downloadPasta(pastaId, pastaNome) {
     manterModalAberto = true;
@@ -2833,4 +2994,340 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function toggleMenu() {
     document.querySelector('.nav-actions').classList.toggle('show');
+}
+
+async function abrirTxtViewer(arquivo) {
+    txtAtual = arquivo;
+    document.getElementById('txtViewerTitle').textContent = arquivo.nome_original;
+    document.getElementById('txtViewerModal').classList.add('active'); 
+    toggleBodyScroll(true);
+    await carregarTxtDocumento(arquivo);
+}
+
+async function carregarTxtDocumento(arquivo) {
+    const viewerBody = document.getElementById('txtViewerBody');
+    const url = API_URL + '/uploads/' + arquivo.nome_arquivo;
+    
+    viewerBody.innerHTML = `
+        <div class="txt-viewer-loading">
+            <div class="txt-viewer-spinner"></div>
+            <p>Carregando arquivo...</p>
+        </div>
+    `;
+    
+    try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Erro ao carregar arquivo');
+        
+        const text = await response.text();
+        viewerBody.innerHTML = text;
+        
+    } catch (error) {
+        console.error('Erro ao carregar TXT:', error);
+        viewerBody.innerHTML = `
+            <div class="txt-viewer-error">
+                <i class="fas fa-exclamation-triangle"></i>
+                <h3>Erro ao carregar arquivo</h3>
+                <p>${error.message}</p>
+                <button class="txt-viewer-btn primary" onclick="baixarTxtAtual()" style="margin-top: 15px;">
+                    <i class="fas fa-download"></i> Baixar arquivo
+                </button>
+            </div>
+        `;
+    }
+}
+
+function fecharTxtViewer() {
+    document.getElementById('txtViewerModal').classList.remove('active'); 
+    txtAtual = null;
+    toggleBodyScroll(false);
+}
+
+
+function baixarTxtAtual() {
+    if (txtAtual) {
+        baixarArquivo(txtAtual.nome_arquivo);
+    }
+}
+
+function copiarTxtText() {
+    const viewerBody = document.getElementById('txtViewerBody');
+    const text = viewerBody.innerText || viewerBody.textContent;
+    
+    navigator.clipboard.writeText(text).then(() => {
+        mostrarNotificacao('Texto copiado para a área de transferência!');
+    }).catch(() => {
+        mostrarAlerta('Erro', 'Não foi possível copiar o texto.');
+    });
+}
+
+function imprimirTxt() {
+    const viewerBody = document.getElementById('txtViewerBody');
+    const text = viewerBody.innerText || viewerBody.textContent;
+    
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <html>
+            <head>
+                <title>${txtAtual ? txtAtual.nome_original : 'Documento'}</title>
+                <style>
+                    body { 
+                        font-family: 'Courier New', monospace; 
+                        line-height: 1.6; 
+                        padding: 40px; 
+                        white-space: pre-wrap;
+                    }
+                </style>
+            </head>
+            <body>
+                ${text}
+            </body>
+        </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+}
+
+async function abrirExcelViewer(arquivo) {
+    excelAtual = arquivo;
+    document.getElementById('excelViewerTitle').textContent = arquivo.nome_original;
+    document.getElementById('excelViewerModal').classList.add('active'); 
+    toggleBodyScroll(true);
+    await carregarExcelDocumento(arquivo);
+}
+
+async function carregarExcelDocumento(arquivo) {
+    const viewerBody = document.getElementById('excelViewerBody');
+    const url = API_URL + '/uploads/' + arquivo.nome_arquivo;
+    
+    viewerBody.innerHTML = `
+        <div class="excel-viewer-loading">
+            <div class="spinner"></div>
+            <p>Carregando planilha...</p>
+        </div>
+    `;
+    
+    try {
+        const response = await fetch(url, {
+            headers: {
+                'Authorization': `Bearer ${usuario?.token || ''}` 
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Erro ${response.status}: ${response.statusText}`);
+        }
+        
+        const arrayBuffer = await response.arrayBuffer();
+        
+        const data = new Uint8Array(arrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        
+        const primeiraPlanilha = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[primeiraPlanilha];
+        
+        const html = XLSX.utils.sheet_to_html(worksheet, {
+            id: "excel-table",
+            editable: false,
+            header: "",
+            footer: ""
+        });
+        
+        viewerBody.innerHTML = `
+            <div style="margin-bottom: 1rem;">
+                <select id="excelSheetSelector" onchange="mudarPlanilhaExcel(this.value)" style="padding: 0.5rem; border-radius: 8px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-primary);">
+                    ${workbook.SheetNames.map(nome => `<option value="${nome}">${nome}</option>`).join('')}
+                </select>
+            </div>
+            <div id="excelSheetContent" style="overflow-x: auto;">
+                ${html}
+            </div>
+            <style>
+                .excel-table {
+                    border-collapse: collapse;
+                    width: 100%;
+                    background: var(--card-bg);
+                }
+                .excel-table th {
+                    background: #1e6f3f;
+                    color: white;
+                    padding: 8px;
+                    position: sticky;
+                    top: 0;
+                }
+                .excel-table td {
+                    border: 1px solid var(--border-color);
+                    padding: 6px 8px;
+                    color: var(--text-primary);
+                }
+                .excel-table tr:hover td {
+                    background: var(--hover-bg);
+                }
+            </style>
+        `;
+        
+        window.excelWorkbook = workbook;
+        
+    } catch (error) {
+        console.error('Erro ao carregar Excel:', error);
+        viewerBody.innerHTML = `
+            <div class="excel-viewer-error" style="text-align: center; padding: 40px;">
+                <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: #f56565; margin-bottom: 15px;"></i>
+                <h3 style="color: var(--text-primary);">Erro ao carregar planilha</h3>
+                <p style="color: var(--text-muted);">${error.message}</p>
+                <p style="color: var(--text-muted); margin-top: 10px;">Você pode tentar baixar o arquivo para visualizá-lo.</p>
+                <button class="modal-header-btn primary" onclick="baixarExcelAtual()" style="margin-top: 15px;">
+                    <i class="fas fa-download"></i> Baixar planilha
+                </button>
+            </div>
+        `;
+    }
+}
+
+function mudarPlanilhaExcel(nomePlanilha) {
+    if (!window.excelWorkbook) return;
+    
+    const worksheet = window.excelWorkbook.Sheets[nomePlanilha];
+    const html = XLSX.utils.sheet_to_html(worksheet, {
+        id: "excel-table",
+        editable: false
+    });
+    
+    document.getElementById('excelSheetContent').innerHTML = html;
+}
+
+function fecharExcelViewer() {
+    document.getElementById('excelViewerModal').classList.remove('active');
+    excelAtual = null;
+    toggleBodyScroll(false);
+}
+
+function baixarExcelAtual() {
+    if (excelAtual) {
+        baixarArquivo(excelAtual.nome_arquivo);
+    }
+}
+async function abrirPowerpointViewer(arquivo) {
+    powerpointAtual = arquivo;
+    document.getElementById('powerpointViewerTitle').textContent = arquivo.nome_original;
+    document.getElementById('powerpointViewerModal').classList.add('active');
+    toggleBodyScroll(true);
+    
+    await carregarPowerpointDocumento(arquivo);
+}
+
+async function carregarPowerpointDocumento(arquivo) {
+    const canvas = document.getElementById('powerpointCanvas');
+    const url = API_URL + '/uploads/' + arquivo.nome_arquivo;
+    
+    try {
+        const response = await fetch(url);
+        const arrayBuffer = await response.arrayBuffer();
+        
+        powerpointViewer = new PptxViewJS.PPTXViewer({
+            canvas: canvas,
+            width: 800,
+            height: 600
+        });
+        
+        await powerpointViewer.loadFile(arrayBuffer);
+        
+        totalSlides = powerpointViewer.getSlideCount();
+        document.getElementById('slideInfo').textContent = `Slide 1 / ${totalSlides}`;
+        
+        await powerpointViewer.renderSlide(0);
+        
+        atualizarBotoesNavegacao();
+        
+    } catch (error) {
+        console.error('Erro ao carregar PowerPoint:', error);
+        const container = document.querySelector('#powerpointViewerModal .modal-body');
+        container.innerHTML = `
+            <div style="text-align: center; padding: 40px;">
+                <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: #ed8936; margin-bottom: 15px;"></i>
+                <h3 style="color: var(--text-primary);">Erro ao carregar apresentação</h3>
+                <p style="color: var(--text-muted);">${error.message || 'Formato não suportado'}</p>
+                <div style="margin-top: 20px; display: flex; gap: 1rem; justify-content: center;">
+                    <button class="modal-header-btn primary" onclick="abrirPowerpointOfficeOnline()">
+                        <i class="fas fa-external-link-alt"></i> Abrir no Office Online
+                    </button>
+                    <button class="modal-header-btn primary" onclick="baixarPowerpointAtual()">
+                        <i class="fas fa-download"></i> Baixar apresentação
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+}
+
+function abrirPowerpointOfficeOnline() {
+    if (!powerpointAtual) return;
+    
+    const url = API_URL + '/uploads/' + powerpointAtual.nome_arquivo;
+    const officeOnlineUrl = `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(url)}`;
+    window.open(officeOnlineUrl, '_blank');
+    
+    fecharPowerpointViewer();
+}
+
+async function proximoSlide() {
+    if (!powerpointViewer || slideAtual >= totalSlides) return;
+    
+    slideAtual++;
+    await powerpointViewer.renderSlide(slideAtual - 1);
+    document.getElementById('slideInfo').textContent = `Slide ${slideAtual} / ${totalSlides}`;
+    atualizarBotoesNavegacao();
+}
+
+async function slideAnterior() {
+    if (!powerpointViewer || slideAtual <= 1) return;
+    
+    slideAtual--;
+    await powerpointViewer.renderSlide(slideAtual - 1);
+    document.getElementById('slideInfo').textContent = `Slide ${slideAtual} / ${totalSlides}`;
+    atualizarBotoesNavegacao();
+}
+
+function atualizarBotoesNavegacao() {
+    const prevBtn = document.getElementById('prevSlideBtn');
+    const nextBtn = document.getElementById('nextSlideBtn');
+    
+    if (prevBtn) {
+        prevBtn.disabled = slideAtual <= 1;
+        prevBtn.style.opacity = slideAtual <= 1 ? '0.5' : '1';
+    }
+    if (nextBtn) {
+        nextBtn.disabled = slideAtual >= totalSlides;
+        nextBtn.style.opacity = slideAtual >= totalSlides ? '0.5' : '1';
+    }
+}
+
+function fecharPowerpointViewer() {
+    const modal = document.getElementById('powerpointViewerModal');
+    modal.classList.remove('active');
+    
+    if (powerpointViewer) {
+        if (powerpointViewer.destroy) {
+            powerpointViewer.destroy();
+        }
+        powerpointViewer = null;
+    }
+    
+    powerpointAtual = null;
+    slideAtual = 1;
+    totalSlides = 0;
+    toggleBodyScroll(false);
+    
+    const canvas = document.getElementById('powerpointCanvas');
+    if (canvas) {
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+}
+
+function baixarPowerpointAtual() {
+    if (powerpointAtual) {
+        baixarArquivo(powerpointAtual.nome_arquivo);
+    }
 }
