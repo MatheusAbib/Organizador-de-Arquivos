@@ -5,9 +5,9 @@
         document.getElementById('userName').textContent = usuario.nome;
     }
 
-    const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-        ? 'http://localhost:3000'  
-        : 'https://app-fdeaa58d-ec6e-435f-9f32-f3ea2f463701.cleverapps.io'; 
+ const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:3000'  
+    : 'https://organizador-backend.cleverapps.io'; 
     
 
         let usuarios = [];
