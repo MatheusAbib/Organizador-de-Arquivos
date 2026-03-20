@@ -870,7 +870,7 @@ body.modal-open {
 
 .card-header .comentario-btn.active {
     opacity: 1;
-    color: var(--btn-primary-bg);
+    color: #506c7c;
 }
 
 .card-header .comentario-btn {
@@ -1425,7 +1425,7 @@ mark {
     border-radius: 24px;
     width: 95%;
     max-width: 500px;
-    max-height: 85vh;
+    max-height: 86vh;
     overflow: hidden;
     box-shadow: 0 30px 60px rgba(0,0,0,0.15);
     border: 1px solid var(--border-color);
@@ -1583,6 +1583,7 @@ mark {
     border: 1px solid var(--border-color);
 }
 
+
 .pasta-content-item:hover {
     background: var(--hover-bg);
     transform: translateY(-3px);
@@ -1602,6 +1603,11 @@ mark {
     word-break: break-word;
     margin-bottom: 0.2rem;
     font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3rem;
+    flex-wrap: wrap;
 }
 
 .pasta-content-item .tipo {
@@ -1614,11 +1620,31 @@ mark {
     display: flex;
     gap: 0.3rem;
     justify-content: center;
-    opacity: 1;  
+    opacity: 0;
     transition: opacity 0.3s;
     margin-top: 0.5rem;
     flex-wrap: wrap;
 }
+
+
+.pasta-content-item .favorito-btn-absolute {
+    position: absolute;
+    top: 0.5rem;
+    left: 0.5rem;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    z-index: 5;
+    color: #d4a5a5;
+}
+
 
 .pasta-content-item:hover .pasta-content-actions {
     opacity: 1;
@@ -1637,6 +1663,86 @@ mark {
     justify-content: center;
     transition: all 0.2s;
     color: var(--text-secondary);
+}
+
+.pasta-content-item .favorito-btn-absolute.active {
+    color: var(--favorite-color);
+    background: var(--card-bg);
+}
+
+.pasta-content-item .favorito-btn-absolute:hover {
+    transform: scale(1.1);
+    border-color: var(--favorite-color);
+}
+
+.pasta-content-item .delete-btn-absolute {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    z-index: 5;
+    color: #c44536;
+}
+
+.pasta-content-item .delete-btn-absolute:hover {
+    background: #c44536;
+    color: white;
+    transform: scale(1.1);
+}
+
+.pasta-content-item .comentario-btn-absolute {
+    position: absolute;
+    bottom: 0.5rem;
+    right: 0.5rem;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    width: 25px;
+    height: 25px;
+    display: flex;
+    font-size: 11px;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    z-index: 5;
+    color: var(--comment-color);
+}
+
+.pasta-content-item .comentario-btn-absolute.active {
+    background: var(--comment-color);
+    color: white;
+    border-color: var(--comment-color);
+}
+
+.pasta-content-item .comentario-btn-absolute:hover {
+    transform: scale(1.1);
+}
+
+.pasta-content-item .rename-btn-inline {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.7rem;
+    color: var(--icon-color);
+    opacity: 0.6;
+    transition: all 0.2s;
+    padding: 0 2px;
+}
+
+.pasta-content-item .rename-btn-inline:hover {
+    opacity: 1;
+    transform: scale(1.1);
+
 }
 
 .content-action-btn:hover {
@@ -1680,7 +1786,7 @@ ontent-action-btn[title="Editar"]:hover,
 .content-action-btn[title="Remover"]:hover,
 .content-action-btn[title="Remover da pasta"]:hover,
 .content-action-btn[title="Remover da minha lista"]:hover {
-    background: #9f7aea;  /* Roxo */
+    background: #9f7aea;  
     border-color: #9f7aea;
     color: white;
 }
@@ -1692,9 +1798,53 @@ ontent-action-btn[title="Editar"]:hover,
     color: white;
 }
 
+.content-action-btn[title="Mover para outra pasta"]:hover,
+.content-action-btn.btn-baixar:hover {
+    background: #f59e0b; 
+    border-color: #f59e0b;
+    color: white;
+}
+
+.content-action-btn.active {
+    background: var(--icon-color);
+    border-color: var(--icon-color);
+    color: white;
+}
+
+.content-action-btn.active[title="Favoritar"],
+.content-action-btn.active[title="Desfavoritar"] {
+    background: var(--favorite-color);
+    border-color: var(--favorite-color);
+    color: white;
+}
+
+.content-action-btn.active[title="Editar comentário"],
+.content-action-btn.active[title="Adicionar comentário"] {
+    background: var(--comment-color);
+    border-color: var(--comment-color);
+    color: white;
+}
+
+
+.content-action-btn[title="Favoritar"]:hover,
+.content-action-btn.btn-abrir:hover {
+    background: #fbbf24;  
+    border-color: #fbbf24;
+    color: white;
+}
+
+.content-action-btn[title="Desfavoritar"]:hover,
+.content-action-btn.btn-abrir:hover {
+    background: #d4a5a5;  
+    border-color: #d4a5a5;
+    color: white;
+}
+
+
+
 .content-action-btn[title="Abrir"]:hover,
 .content-action-btn.btn-abrir:hover {
-    background: #2b8ac1;  /* Azul */
+    background: #2b8ac1;
     border-color: #2b8ac1;
     color: white;
 }
@@ -2334,6 +2484,9 @@ body.dark-mode .paginacao-rows-selector select {
     z-index: 10000 !important;
 }
 
+
+
+
 .spinner-overlay {
     position: fixed;
     top: 0;
@@ -2417,6 +2570,10 @@ body.dark-mode .paginacao-rows-selector select {
 
         .certifications {
         grid-template-columns: 1fr;
+    }
+
+    .pasta-content-actions{
+        opacity: 1;
     }
 
     

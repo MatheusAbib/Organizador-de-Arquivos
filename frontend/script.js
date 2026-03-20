@@ -56,6 +56,9 @@ let slideAtual = 1;
 let totalSlides = 0;
 
 
+let precisaAtualizarLista = false;
+
+
 
 const usuario = JSON.parse(localStorage.getItem('usuario'));
 if (!usuario) {
@@ -581,6 +584,16 @@ function renderizarPastas() {
         </li>
         ${pastasHtml}
     `;
+    
+    const compartilhadosList = document.getElementById('compartilhadosList');
+    if (compartilhadosList && compartilhados.length > 0) {
+        renderizarCompartilhados();
+    }
+    
+    const compartilhadosPorMimList = document.getElementById('compartilhadosPorMimList');
+    if (compartilhadosPorMimList && compartilhadosPorMim.length > 0) {
+        renderizarCompartilhadosPorMim();
+    }
 }
 
 function renderizarPastaItem(pasta, nivel) {
@@ -799,6 +812,14 @@ async function atualizarConteudoModal(pastaId) {
         
         renderizarConteudoPasta(dados.pastas || [], dados.arquivos || [], permissao);
         
+        for (const arquivo of dados.arquivos) {
+            const index = todosArquivos.findIndex(a => a.id === arquivo.id);
+            if (index !== -1) {
+                todosArquivos[index].favorito = arquivo.favorito;
+                todosArquivos[index].comentario = arquivo.comentario;
+            }
+        }
+        
     } catch (error) {
         console.error('Erro ao atualizar modal:', error);
         document.getElementById('pastaModalBody').innerHTML = 
@@ -872,27 +893,45 @@ function renderizarConteudoPasta(subPastas, arquivos, permissao = 'proprietario'
         
         const tamanho = (arquivo.tamanho / 1024).toFixed(2) + ' KB';
         
+        const isOutros = arquivo.tipo_arquivo === 'outros';
+        
         html += `
             <div class="pasta-content-item">
-                <div class="icone ${classeCor}"><i class="fas ${icone} fa-2x"></i></div>
-                <div class="nome">${arquivo.nome_original}</div>
-                <div class="tipo">${arquivo.tipo_arquivo} • ${tamanho}</div>
-                <div class="pasta-content-actions" onclick="event.stopPropagation()">
-                    <button class="content-action-btn ${arquivo.favorito ? 'active' : ''}" onclick="favoritarArquivo(${arquivo.id}, ${!arquivo.favorito})" title="${arquivo.favorito ? 'Desfavoritar' : 'Favoritar'}">
-                        <i class="fas fa-star"></i>
+                <button class="favorito-btn-absolute ${arquivo.favorito ? 'active' : ''}" onclick="event.stopPropagation(); favoritarArquivo(${arquivo.id}, ${!arquivo.favorito})" title="${arquivo.favorito ? 'Desfavoritar' : 'Favoritar'}">
+                    <i class="fas fa-star"></i>
+                </button>
+                
+                ${permissao === 'proprietario' ? `
+                    <button class="delete-btn-absolute" onclick="event.stopPropagation(); deletarArquivo(${arquivo.id})" title="Excluir">
+                        <i class="fas fa-times"></i>
                     </button>
-                    <button class="content-action-btn" onclick="abrirArquivo('${arquivo.nome_arquivo}', '${arquivo.tipo_arquivo}')" title="Abrir"><i class="fas fa-eye"></i></button>
-                    <button class="content-action-btn" onclick="baixarArquivo('${arquivo.nome_arquivo}')" title="Baixar"><i class="fas fa-download"></i></button>
-                    <button class="content-action-btn ${arquivo.comentario ? 'active' : ''}" onclick="event.stopPropagation(); abrirComentarioModal(${arquivo.id})" title="${arquivo.comentario ? 'Editar comentário' : 'Adicionar comentário'}"><i class="fas fa-comment"></i></button>
-                    
+                ` : ''}
+                
+                <button class="comentario-btn-absolute ${arquivo.comentario ? 'active' : ''}" onclick="event.stopPropagation(); abrirComentarioModal(${arquivo.id})" title="${arquivo.comentario ? 'Editar comentário' : 'Adicionar comentário'}">
+                    <i class="fas fa-comment"></i>
+                </button>
+                
+                <div class="icone ${classeCor}" onclick="abrirArquivo('${arquivo.nome_arquivo}', '${arquivo.tipo_arquivo}')">
+                    <i class="fas ${icone} fa-2x"></i>
+                </div>
+                
+                <div class="nome">
+                    ${arquivo.nome_original}
                     ${permissao === 'editar' || permissao === 'proprietario' ? `
-                        <button class="content-action-btn" onclick="iniciarEdicaoArquivo(${arquivo.id}, '${arquivo.nome_original}')" title="Renomear"><i class="fas fa-edit"></i></button>
+                        <button class="rename-btn-inline" onclick="event.stopPropagation(); iniciarEdicaoArquivo(${arquivo.id}, '${arquivo.nome_original}')" title="Renomear">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                    ` : ''}
+                </div>
+                
+                <div class="tipo">${arquivo.tipo_arquivo} • ${tamanho}</div>
+                
+                <div class="pasta-content-actions" onclick="event.stopPropagation()">
+                    ${!isOutros ? `<button class="content-action-btn" onclick="abrirArquivo('${arquivo.nome_arquivo}', '${arquivo.tipo_arquivo}')" title="Abrir"><i class="fas fa-eye"></i></button>` : ''}
+                    <button class="content-action-btn" onclick="baixarArquivo('${arquivo.nome_arquivo}')" title="Baixar"><i class="fas fa-download"></i></button>
+                    ${permissao === 'editar' || permissao === 'proprietario' ? `
                         <button class="content-action-btn" onclick="abrirMoverModal(${arquivo.id})" title="Mover para outra pasta"><i class="fas fa-folder-open"></i></button>
                         <button class="content-action-btn" onclick="removerDaPasta(${arquivo.id})" title="Remover da pasta"><i class="fas fa-arrow-left"></i></button>
-                    ` : ''}
-                    
-                    ${permissao === 'proprietario' ? `
-                        <button class="content-action-btn delete" onclick="deletarArquivo(${arquivo.id})" title="Excluir"><i class="fas fa-trash"></i></button>
                     ` : ''}
                 </div>
             </div>
@@ -922,7 +961,19 @@ async function removerDaPasta(arquivoId) {
                     }
                     
                     if (pastaModalAtual) {
-                        await atualizarConteudoModal(pastaModalAtual);
+                        const responsePasta = await fetch(`${API_URL}/api/pasta/${pastaModalAtual}/conteudo?usuario_id=${usuario.id}`);
+                        if (responsePasta.ok) {
+                            const dados = await responsePasta.json();
+                            let permissao = 'proprietario';
+                            const pasta = todasPastas.find(p => p.id === pastaModalAtual);
+                            if (!pasta) {
+                                const comp = compartilhados.find(c => c.id === pastaModalAtual);
+                                if (comp) permissao = comp.permissao;
+                            }
+                            renderizarConteudoPasta(dados.pastas || [], dados.arquivos || [], permissao);
+                        }
+                        precisaAtualizarLista = true;
+                        aplicarFiltroEBusca();
                     }
                     mostrarNotificacao('Arquivo removido da pasta');
                 } else {
@@ -954,6 +1005,11 @@ function fecharModalPasta() {
     pastaModalAtual = null;
     historicoPastas = [];
     toggleBodyScroll(false);
+    
+    if (precisaAtualizarLista) {
+        aplicarFiltroEBusca();
+        precisaAtualizarLista = false;
+    }
 }
 
 function abrirModalPastaComHistorico(pastaId) {
@@ -987,16 +1043,9 @@ async function criarPasta(pastaPaiId = null) {
                         salvarEstadoPastas();
                     }
                     
-                    const novaPasta = await response.json();
-                    todasPastas.push(novaPasta);
+                    await carregarPastas();
                     
-                    renderizarPastas(); 
-                    
-                    if (pastaModalAtual) {
-                        await atualizarConteudoModal(pastaModalAtual);
-                    }
-                    
-                    if (pastaModalAtual === pastaPaiId) {
+                    if (pastaModalAtual && pastaModalAtual !== null) {
                         await atualizarConteudoModal(pastaModalAtual);
                     }
                     
@@ -1040,10 +1089,7 @@ function criarSubPasta(pastaId = null) {
                         salvarEstadoPastas();
                     }
                     
-                    const novaPasta = await response.json();
-                    todasPastas.push(novaPasta);
-                    
-                    renderizarPastas(); 
+                    await carregarPastas();
                     
                     if (pastaModalAtual) {
                         await atualizarConteudoModal(pastaModalAtual);
@@ -1854,6 +1900,8 @@ function renderizarArquivosGrid(arquivos) {
             localizacaoHtml = `<div class="pasta-localizacao"><i class="fas fa-folder"></i> <span class="raiz-texto">Raiz</span></div>`;
         }
 
+        const isOutros = tipo === 'outros';
+
         return `
             <div class="arquivo-card ${tipo === 'imagem' ? 'com-imagem' : ''}">
                 <div class="card-header">
@@ -1880,7 +1928,7 @@ function renderizarArquivosGrid(arquivos) {
                 </div>
                 ${localizacaoHtml}
                 <div class="arquivo-acoes">
-                    <button class="btn-abrir" onclick="abrirArquivo('${arquivo.nome_arquivo}', '${tipo}')"><i class="fas fa-eye"></i> Abrir</button>
+                    <button class="btn-abrir" ${isOutros ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : `onclick="abrirArquivo('${arquivo.nome_arquivo}', '${tipo}')"`}><i class="fas fa-eye"></i> Abrir</button>
                     <button class="btn-baixar" onclick="baixarArquivo('${arquivo.nome_arquivo}')"><i class="fas fa-download"></i> Baixar</button>
                     <button class="btn-mover" onclick="abrirMoverModal(${arquivo.id})"><i class="fas fa-folder-open"></i> Mover</button>
                 </div>
@@ -1970,6 +2018,8 @@ function renderizarArquivosLista(arquivos) {
             localizacaoHtml = `<div class="pasta-localizacao"><i class="fas fa-folder"></i> <span class="raiz-texto">Raiz</span></div>`;
         }
 
+        const isOutros = tipo === 'outros';
+
         return `
             <div class="lista-item">
                 <div class="card-header" style="border-bottom: none; margin-bottom: 0; padding: 0; width: auto;">
@@ -1995,7 +2045,7 @@ function renderizarArquivosLista(arquivos) {
                     </div>
                     ${localizacaoHtml}
                     <div class="arquivo-acoes">
-                        <button class="btn-abrir" onclick="abrirArquivo('${arquivo.nome_arquivo}', '${tipo}')"><i class="fas fa-eye"></i> Abrir</button>
+                        <button class="btn-abrir" ${isOutros ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : `onclick="abrirArquivo('${arquivo.nome_arquivo}', '${tipo}')"`}><i class="fas fa-eye"></i> Abrir</button>
                         <button class="btn-baixar" onclick="baixarArquivo('${arquivo.nome_arquivo}')"><i class="fas fa-download"></i> Baixar</button>
                         <button class="btn-mover" onclick="abrirMoverModal(${arquivo.id})"><i class="fas fa-folder-open"></i> Mover</button>
                     </div>
@@ -2044,8 +2094,6 @@ async function deletarArquivo(id) {
     });
 }
 
-
-
 async function favoritarArquivo(id, favorito) {
     manterModalAberto = true;
     
@@ -2068,8 +2116,28 @@ async function favoritarArquivo(id, favorito) {
                 
                 if (favoritosModalAberto) {
                     await carregarFavoritos();
-                } else if (pastaModalAtual) {
-                    await atualizarConteudoModal(pastaModalAtual);
+                }
+                
+                if (pastaModalAtual) {
+                    const responsePasta = await fetch(`${API_URL}/api/pasta/${pastaModalAtual}/conteudo?usuario_id=${usuario.id}`);
+                    if (responsePasta.ok) {
+                        const dados = await responsePasta.json();
+                        for (const arquivo of dados.arquivos) {
+                            const index = todosArquivos.findIndex(a => a.id === arquivo.id);
+                            if (index !== -1) {
+                                todosArquivos[index].favorito = arquivo.favorito;
+                                todosArquivos[index].comentario = arquivo.comentario;
+                            }
+                        }
+                        let permissao = 'proprietario';
+                        const pasta = todasPastas.find(p => p.id === pastaModalAtual);
+                        if (!pasta) {
+                            const comp = compartilhados.find(c => c.id === pastaModalAtual);
+                            if (comp) permissao = comp.permissao;
+                        }
+                        renderizarConteudoPasta(dados.pastas || [], dados.arquivos || [], permissao);
+                    }
+                    precisaAtualizarLista = true;
                 } else {
                     aplicarFiltroEBusca();
                 }
@@ -2138,16 +2206,41 @@ async function confirmarMover() {
             if (response.ok) {
                 fecharMoverModal();
                 
+                // Atualizar o arquivo no array global
                 const index = todosArquivos.findIndex(a => a.id === arquivoParaMover);
                 if (index !== -1) {
                     todosArquivos[index].pasta_id = pastaDestino || null;
                 }
                 
+                // Se o modal da pasta estiver aberto
                 if (pastaModalAtual) {
-                    await atualizarConteudoModal(pastaModalAtual);
-                } else {
-                    aplicarFiltroEBusca();
+                    const arquivoMovido = todosArquivos.find(a => a.id === arquivoParaMover);
+                    
+                    // Se o arquivo foi movido PARA OUTRA pasta diferente da atual
+                    if (arquivoMovido && arquivoMovido.pasta_id !== pastaModalAtual) {
+                        // Remove o arquivo do conteúdo do modal atual
+                        const responsePasta = await fetch(`${API_URL}/api/pasta/${pastaModalAtual}/conteudo?usuario_id=${usuario.id}`);
+                        if (responsePasta.ok) {
+                            const dados = await responsePasta.json();
+                            let permissao = 'proprietario';
+                            const pasta = todasPastas.find(p => p.id === pastaModalAtual);
+                            if (!pasta) {
+                                const comp = compartilhados.find(c => c.id === pastaModalAtual);
+                                if (comp) permissao = comp.permissao;
+                            }
+                            renderizarConteudoPasta(dados.pastas || [], dados.arquivos || [], permissao);
+                        }
+                    } else if (arquivoMovido && arquivoMovido.pasta_id === pastaModalAtual) {
+                        // Se o arquivo foi movido para a pasta atual, atualizar o modal
+                        await atualizarConteudoModal(pastaModalAtual);
+                    }
+                    
+                    // FORÇAR a atualização da visualização principal
+                    precisaAtualizarLista = true;
                 }
+                
+                // SEMPRE atualizar a visualização principal
+                aplicarFiltroEBusca();
                 
                 mostrarNotificacao('Arquivo movido com sucesso');
             } else {
@@ -2359,7 +2452,25 @@ async function salvarComentario() {
                 fecharComentarioModal();
                 
                 if (pastaModalAtual) {
-                    await atualizarConteudoModal(pastaModalAtual);
+                    const responsePasta = await fetch(`${API_URL}/api/pasta/${pastaModalAtual}/conteudo?usuario_id=${usuario.id}`);
+                    if (responsePasta.ok) {
+                        const dados = await responsePasta.json();
+                        for (const arquivo of dados.arquivos) {
+                            const index = todosArquivos.findIndex(a => a.id === arquivo.id);
+                            if (index !== -1) {
+                                todosArquivos[index].favorito = arquivo.favorito;
+                                todosArquivos[index].comentario = arquivo.comentario;
+                            }
+                        }
+                        let permissao = 'proprietario';
+                        const pasta = todasPastas.find(p => p.id === pastaModalAtual);
+                        if (!pasta) {
+                            const comp = compartilhados.find(c => c.id === pastaModalAtual);
+                            if (comp) permissao = comp.permissao;
+                        }
+                        renderizarConteudoPasta(dados.pastas || [], dados.arquivos || [], permissao);
+                    }
+                    precisaAtualizarLista = true;
                 } else {
                     aplicarFiltroEBusca();
                 }
@@ -2377,7 +2488,6 @@ async function salvarComentario() {
         }
     }, 'Salvando comentário...');
 }
-
 
 async function downloadPasta(pastaId, pastaNome) {
     manterModalAberto = true;
@@ -3379,5 +3489,11 @@ function fecharPowerpointViewer() {
 function baixarPowerpointAtual() {
     if (powerpointAtual) {
         baixarArquivo(powerpointAtual.nome_arquivo);
+    }
+}
+
+function atualizarListaGrid() {
+    if (!pastaModalAtual || !document.getElementById('pastaModal').classList.contains('active')) {
+        aplicarFiltroEBusca();
     }
 }
