@@ -141,13 +141,6 @@ const upload = multer({
     }
 });
 
-// const db = mysql.createConnection({
-//     host: process.env.DB_HOST || 'localhost',
-//     user: process.env.DB_USER || 'root',
-//     password: process.env.DB_PASSWORD || 'usbw',
-//     database: process.env.DB_NAME || 'organizador_arquivos',
-//     port: 3306
-// });
 
     const db = mysql.createConnection({
         host: process.env.MYSQL_ADDON_HOST,
@@ -156,6 +149,7 @@ const upload = multer({
         database: process.env.MYSQL_ADDON_DB,
         port: process.env.MYSQL_ADDON_PORT || 3306
     });
+
 
 db.connect((err) => {
     if (err) {
