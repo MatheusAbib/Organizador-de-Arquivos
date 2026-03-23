@@ -1,10 +1,10 @@
 {
-  "name": "organizador-arquivos",  
+  "name": "organizador-arquivos",
   "version": "1.0.0",
   "description": "Organizador de Arquivos - Backend",
-  "main": "backend/server.js",  
+  "main": "backend/server.js",
   "scripts": {
-    "start": "node backend/server.js",  
+    "start": "node backend/server.js",
     "dev": "nodemon backend/server.js"
   },
   "keywords": [],
@@ -17,7 +17,7 @@
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "multer": "^2.1.1",
-    "mysql2": "^3.19.1"
+    "mysql2": "^3.9.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"

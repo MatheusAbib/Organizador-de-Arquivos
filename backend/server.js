@@ -1,5 +1,5 @@
 const express = require('express');
-const mysql = require('mysql2');
+const mysql = require('mysql2/promise');
 const cors = require('cors');
 const multer = require('multer');
 const path = require('path');
@@ -11,7 +11,6 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 const HOST = '0.0.0.0';
-
 
 app.use(cors({
     origin: [
@@ -25,28 +24,23 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization', 'usuario-id']
 }));
 
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
 app.use(express.static(path.join(__dirname, '../frontend')));
-
-
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-
 const storage = multer.diskStorage({
-destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, 'uploads'); 
-    if (!fs.existsSync(uploadDir)) {
-        fs.mkdirSync(uploadDir, { recursive: true });
+    destination: (req, file, cb) => {
+        const uploadDir = path.join(__dirname, 'uploads'); 
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+        const uniqueName = Date.now() + '-' + file.originalname;
+        cb(null, uniqueName);
     }
-    cb(null, uploadDir);
-},
-filename: (req, file, cb) => {
-    const uniqueName = Date.now() + '-' + file.originalname;
-    cb(null, uniqueName);
-}
 });
 
 const upload = multer({ 
@@ -145,23 +139,50 @@ const upload = multer({
     }
 });
 
-
-    const db = mysql.createConnection({
-        host: process.env.MYSQL_ADDON_HOST,
-        user: process.env.MYSQL_ADDON_USER,
-        password: process.env.MYSQL_ADDON_PASSWORD,
-        database: process.env.MYSQL_ADDON_DB,
-        port: process.env.MYSQL_ADDON_PORT || 3306
-    });
-
-
-db.connect((err) => {
-    if (err) {
-        console.error('Erro ao conectar no MySQL:', err);
-        return;
-    }
-    console.log('✅ Conectado ao MySQL com sucesso!');
+const pool = mysql.createPool({
+    host: process.env.MYSQL_ADDON_HOST,
+    user: process.env.MYSQL_ADDON_USER,
+    password: process.env.MYSQL_ADDON_PASSWORD,
+    database: process.env.MYSQL_ADDON_DB,
+    port: process.env.MYSQL_ADDON_PORT || 3306,
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 10000,
+    connectTimeout: 10000,
+    acquireTimeout: 10000
 });
+
+async function testDatabaseConnection() {
+    try {
+        const connection = await pool.getConnection();
+        await connection.ping();
+        connection.release();
+        console.log('✅ Conectado ao MySQL com sucesso!');
+        
+        setInterval(async () => {
+            try {
+                const conn = await pool.getConnection();
+                await conn.ping();
+                conn.release();
+                console.log('🔄 Keep-alive: conexão MySQL ativa');
+            } catch (err) {
+                console.error('❌ Keep-alive falhou:', err.message);
+                try {
+                    await pool.query('SELECT 1');
+                    console.log('✅ Reconexão automática bem-sucedida');
+                } catch (reconnectErr) {
+                    console.error('❌ Falha na reconexão:', reconnectErr.message);
+                }
+            }
+        }, 300000);
+    } catch (error) {
+        console.error('❌ Erro ao conectar no MySQL:', error.message);
+    }
+}
+
+testDatabaseConnection();
 
 app.post('/api/cadastro', async (req, res) => {
     const { nome, email, senha } = req.body;
@@ -171,7 +192,7 @@ app.post('/api/cadastro', async (req, res) => {
     }
     
     try {
-        const [results] = await db.promise().query('SELECT * FROM usuarios WHERE email = ?', [email]);
+        const [results] = await pool.query('SELECT * FROM usuarios WHERE email = ?', [email]);
         
         if (results.length > 0) {
             return res.status(400).json({ error: 'Email já cadastrado' });
@@ -180,7 +201,7 @@ app.post('/api/cadastro', async (req, res) => {
         const saltRounds = 10;
         const senhaCriptografada = await bcrypt.hash(senha, saltRounds);
         
-        const [result] = await db.promise().query(
+        const [result] = await pool.query(
             'INSERT INTO usuarios (nome, email, senha) VALUES (?, ?, ?)',
             [nome, email, senhaCriptografada]
         );
@@ -200,7 +221,7 @@ app.put('/api/admin/usuarios/:id', async (req, res) => {
         const { id } = req.params;
         const { nome, email, senha } = req.body;
         
-        const [existe] = await db.promise().query('SELECT * FROM usuarios WHERE email = ? AND id != ?', [email, id]);
+        const [existe] = await pool.query('SELECT * FROM usuarios WHERE email = ? AND id != ?', [email, id]);
         
         if (existe.length > 0) {
             return res.status(400).json({ error: 'Email já está em uso' });
@@ -209,9 +230,9 @@ app.put('/api/admin/usuarios/:id', async (req, res) => {
         if (senha) {
             const saltRounds = 10;
             const senhaCriptografada = await bcrypt.hash(senha, saltRounds);
-            await db.promise().query('UPDATE usuarios SET nome = ?, email = ?, senha = ? WHERE id = ?', [nome, email, senhaCriptografada, id]);
+            await pool.query('UPDATE usuarios SET nome = ?, email = ?, senha = ? WHERE id = ?', [nome, email, senhaCriptografada, id]);
         } else {
-            await db.promise().query('UPDATE usuarios SET nome = ?, email = ? WHERE id = ?', [nome, email, id]);
+            await pool.query('UPDATE usuarios SET nome = ?, email = ? WHERE id = ?', [nome, email, id]);
         }
         
         res.json({ message: 'Usuário atualizado com sucesso' });
@@ -225,7 +246,7 @@ app.put('/api/admin/usuarios/:id/inativar', async (req, res) => {
         const { id } = req.params;
         const { justificativa } = req.body;
         
-        await db.promise().query('UPDATE usuarios SET status = "inativo", inativacao_justificativa = ? WHERE id = ? AND tipo != "admin"', [justificativa, id]);
+        await pool.query('UPDATE usuarios SET status = "inativo", inativacao_justificativa = ? WHERE id = ? AND tipo != "admin"', [justificativa, id]);
         
         res.json({ message: 'Usuário inativado com sucesso' });
     } catch (error) {
@@ -237,7 +258,7 @@ app.put('/api/admin/usuarios/:id/reativar', async (req, res) => {
     try {
         const { id } = req.params;
         
-        await db.promise().query('UPDATE usuarios SET status = "ativo", inativacao_justificativa = NULL WHERE id = ?', [id]);
+        await pool.query('UPDATE usuarios SET status = "ativo", inativacao_justificativa = NULL WHERE id = ?', [id]);
         
         res.json({ message: 'Usuário reativado com sucesso' });
     } catch (error) {
@@ -249,7 +270,7 @@ app.post('/api/login', async (req, res) => {
     const { email, senha } = req.body;
     
     try {
-        const [results] = await db.promise().query('SELECT * FROM usuarios WHERE email = ?', [email]);
+        const [results] = await pool.query('SELECT * FROM usuarios WHERE email = ?', [email]);
         
         if (results.length === 0) {
             return res.status(401).json({ error: 'Usuário não encontrado' });
@@ -318,7 +339,7 @@ app.post('/api/upload', upload.single('arquivo'), async (req, res) => {
 
         const pastaIdValue = pasta_id && pasta_id !== '' ? pasta_id : null;
         
-        const [result] = await db.promise().query(
+        const [result] = await pool.query(
             'INSERT INTO arquivos (usuario_id, nome_original, nome_arquivo, tipo_arquivo, tamanho, pasta_id) VALUES (?, ?, ?, ?, ?, ?)',
             [usuario_id, arquivo.originalname, arquivo.filename, tipo, arquivo.size, pastaIdValue]
         );
@@ -343,7 +364,7 @@ app.post('/api/upload', upload.single('arquivo'), async (req, res) => {
 
 app.get('/api/arquivos/:usuario_id', async (req, res) => {
     try {
-        const [arquivos] = await db.promise().query(
+        const [arquivos] = await pool.query(
             'SELECT * FROM arquivos WHERE usuario_id = ? ORDER BY data_upload DESC',
             [req.params.usuario_id]
         );
@@ -356,7 +377,7 @@ app.get('/api/arquivos/:usuario_id', async (req, res) => {
 
 app.delete('/api/arquivos/:id', async (req, res) => {
     try {
-        const [arquivos] = await db.promise().query('SELECT * FROM arquivos WHERE id = ?', [req.params.id]);
+        const [arquivos] = await pool.query('SELECT * FROM arquivos WHERE id = ?', [req.params.id]);
         
         if (arquivos.length === 0) {
             return res.status(404).json({ error: 'Arquivo não encontrado' });
@@ -364,7 +385,7 @@ app.delete('/api/arquivos/:id', async (req, res) => {
 
         const arquivo = arquivos[0];
         
-        await db.promise().query('DELETE FROM arquivos WHERE id = ?', [req.params.id]);
+        await pool.query('DELETE FROM arquivos WHERE id = ?', [req.params.id]);
         
         const caminhoArquivo = path.join(__dirname, 'uploads', arquivo.nome_arquivo);
         if (fs.existsSync(caminhoArquivo)) {
@@ -387,7 +408,7 @@ app.put('/api/arquivos/:id', async (req, res) => {
             return res.status(400).json({ error: 'Nome é obrigatório' });
         }
         
-        await db.promise().query(
+        await pool.query(
             'UPDATE arquivos SET nome_original = ? WHERE id = ?',
             [nome_original, id]
         );
@@ -404,7 +425,7 @@ app.post('/api/arquivos/:id/comentario', async (req, res) => {
         const { comentario } = req.body;
         const { id } = req.params;
         
-        await db.promise().query(
+        await pool.query(
             'UPDATE arquivos SET comentario = ? WHERE id = ?',
             [comentario, id]
         );
@@ -418,7 +439,7 @@ app.post('/api/arquivos/:id/comentario', async (req, res) => {
 
 app.get('/api/arquivos/:id/comentario', async (req, res) => {
     try {
-        const [arquivos] = await db.promise().query(
+        const [arquivos] = await pool.query(
             'SELECT comentario FROM arquivos WHERE id = ?',
             [req.params.id]
         );
@@ -439,7 +460,7 @@ app.get('/api/pastas/:id/download', async (req, res) => {
     const usuarioId = req.query.usuario_id;
     
     try {
-        const [pastas] = await db.promise().query('SELECT * FROM pastas WHERE id = ?', [pastaId]);
+        const [pastas] = await pool.query('SELECT * FROM pastas WHERE id = ?', [pastaId]);
         
         if (pastas.length === 0) {
             return res.status(404).json({ error: 'Pasta não encontrada' });
@@ -447,7 +468,7 @@ app.get('/api/pastas/:id/download', async (req, res) => {
         
         const pasta = pastas[0];
         
-        const [compartilhado] = await db.promise().query(
+        const [compartilhado] = await pool.query(
             'SELECT * FROM compartilhamentos WHERE pasta_id = ? AND usuario_compartilhado_id = ?', 
             [pastaId, usuarioId]
         );
@@ -481,7 +502,7 @@ app.get('/api/pastas/:id/download', async (req, res) => {
         archive.pipe(output);
         
         const adicionarConteudo = async (pastaIdAtual, caminhoAtual) => {
-            const [arquivos] = await db.promise().query(
+            const [arquivos] = await pool.query(
                 'SELECT * FROM arquivos WHERE pasta_id = ?', 
                 [pastaIdAtual]
             );
@@ -503,7 +524,7 @@ app.get('/api/pastas/:id/download', async (req, res) => {
                 }
             }
             
-            const [subPastas] = await db.promise().query(
+            const [subPastas] = await pool.query(
                 'SELECT * FROM pastas WHERE pasta_pai_id = ?', 
                 [pastaIdAtual]
             );
@@ -561,7 +582,7 @@ app.post('/api/pastas', async (req, res) => {
             return res.status(400).json({ error: 'Usuário e nome são obrigatórios' });
         }
         
-        const [result] = await db.promise().query(
+        const [result] = await pool.query(
             'INSERT INTO pastas (usuario_id, nome, pasta_pai_id) VALUES (?, ?, ?)',
             [usuario_id, nome, pasta_pai_id || null]
         );
@@ -576,13 +597,12 @@ app.post('/api/pastas', async (req, res) => {
     }
 });
 
-
 app.get('/api/pasta/:pasta_id/info', async (req, res) => {
     try {
         const pasta_id = req.params.pasta_id;
         const usuario_id = req.query.usuario_id;
         
-        const [pastas] = await db.promise().query(
+        const [pastas] = await pool.query(
             'SELECT * FROM pastas WHERE id = ?',
             [pasta_id]
         );
@@ -595,7 +615,7 @@ app.get('/api/pasta/:pasta_id/info', async (req, res) => {
         let permissao = 'proprietario';
         
         if (pasta.usuario_id != usuario_id) {
-            const [compartilhamentos] = await db.promise().query(`
+            const [compartilhamentos] = await pool.query(`
                 SELECT c.permissao 
                 FROM compartilhamentos c
                 JOIN pastas p ON c.pasta_id = p.id
@@ -624,7 +644,7 @@ app.get('/api/pasta/:pasta_id/info', async (req, res) => {
 
 app.get('/api/pastas/:usuario_id', async (req, res) => {
     try {
-        const [pastas] = await db.promise().query(
+        const [pastas] = await pool.query(
             'SELECT * FROM pastas WHERE usuario_id = ? ORDER BY nome',
             [req.params.usuario_id]
         );
@@ -642,43 +662,43 @@ app.get('/api/pasta/:pasta_id/conteudo', async (req, res) => {
         
         console.log('Buscando conteúdo da pasta:', { pasta_id, usuario_id });
 
-        const [pastaPropria] = await db.promise().query(
+        const [pastaPropria] = await pool.query(
             'SELECT * FROM pastas WHERE id = ? AND usuario_id = ?', 
             [pasta_id, usuario_id]
         );
         
         if (pastaPropria.length > 0) {
             console.log('Acesso à pasta própria');
-            const [pastas] = await db.promise().query(
+            const [pastas] = await pool.query(
                 'SELECT * FROM pastas WHERE pasta_pai_id = ? ORDER BY nome', 
                 [pasta_id]
             );
-            const [arquivos] = await db.promise().query(
+            const [arquivos] = await pool.query(
                 'SELECT * FROM arquivos WHERE pasta_id = ? ORDER BY data_upload DESC', 
                 [pasta_id]
             );
             return res.json({ pastas, arquivos });
         }
 
-        const [compartilhado] = await db.promise().query(
+        const [compartilhado] = await pool.query(
             'SELECT * FROM compartilhamentos WHERE pasta_id = ? AND usuario_compartilhado_id = ?',
             [pasta_id, usuario_id]
         );
         
         if (compartilhado.length > 0) {
             console.log('Acesso à pasta via compartilhamento direto');
-            const [pastas] = await db.promise().query(
+            const [pastas] = await pool.query(
                 'SELECT * FROM pastas WHERE pasta_pai_id = ? ORDER BY nome', 
                 [pasta_id]
             );
-            const [arquivos] = await db.promise().query(
+            const [arquivos] = await pool.query(
                 'SELECT * FROM arquivos WHERE pasta_id = ? ORDER BY data_upload DESC', 
                 [pasta_id]
             );
             return res.json({ pastas, arquivos });
         }
 
-        const [pasta] = await db.promise().query(
+        const [pasta] = await pool.query(
             'SELECT pasta_pai_id FROM pastas WHERE id = ?',
             [pasta_id]
         );
@@ -686,18 +706,18 @@ app.get('/api/pasta/:pasta_id/conteudo', async (req, res) => {
         if (pasta.length > 0 && pasta[0].pasta_pai_id) {
             const pastaPaiId = pasta[0].pasta_pai_id;
             
-            const [compartilhadoPai] = await db.promise().query(
+            const [compartilhadoPai] = await pool.query(
                 'SELECT * FROM compartilhamentos WHERE pasta_id = ? AND usuario_compartilhado_id = ?',
                 [pastaPaiId, usuario_id]
             );
             
             if (compartilhadoPai.length > 0) {
                 console.log('Acesso à subpasta via compartilhamento da pasta pai');
-                const [pastas] = await db.promise().query(
+                const [pastas] = await pool.query(
                     'SELECT * FROM pastas WHERE pasta_pai_id = ? ORDER BY nome', 
                     [pasta_id]
                 );
-                const [arquivos] = await db.promise().query(
+                const [arquivos] = await pool.query(
                     'SELECT * FROM arquivos WHERE pasta_id = ? ORDER BY data_upload DESC', 
                     [pasta_id]
                 );
@@ -719,7 +739,7 @@ app.put('/api/arquivos/:id/mover', async (req, res) => {
         const { pasta_id } = req.body;
         const { id } = req.params;
         
-        await db.promise().query('UPDATE arquivos SET pasta_id = ? WHERE id = ?', [pasta_id || null, id]);
+        await pool.query('UPDATE arquivos SET pasta_id = ? WHERE id = ?', [pasta_id || null, id]);
         
         res.json({ message: 'Arquivo movido com sucesso' });
     } catch (error) {
@@ -733,7 +753,7 @@ app.put('/api/pastas/:id', async (req, res) => {
         const { nome } = req.body;
         const { id } = req.params;
         
-        await db.promise().query('UPDATE pastas SET nome = ? WHERE id = ?', [nome, id]);
+        await pool.query('UPDATE pastas SET nome = ? WHERE id = ?', [nome, id]);
         
         res.json({ message: 'Pasta renomeada com sucesso' });
     } catch (error) {
@@ -744,8 +764,8 @@ app.put('/api/pastas/:id', async (req, res) => {
 
 app.delete('/api/pastas/:id', async (req, res) => {
     try {
-        await db.promise().query('UPDATE arquivos SET pasta_id = NULL WHERE pasta_id = ?', [req.params.id]);
-        await db.promise().query('DELETE FROM pastas WHERE id = ?', [req.params.id]);
+        await pool.query('UPDATE arquivos SET pasta_id = NULL WHERE pasta_id = ?', [req.params.id]);
+        await pool.query('DELETE FROM pastas WHERE id = ?', [req.params.id]);
         
         res.json({ message: 'Pasta deletada com sucesso' });
     } catch (error) {
@@ -757,7 +777,7 @@ app.delete('/api/pastas/:id', async (req, res) => {
 app.put('/api/pastas/:id/favoritar', async (req, res) => {
     try {
         const { favorito } = req.body;
-        await db.promise().query('UPDATE pastas SET favorito = ? WHERE id = ?', [favorito, req.params.id]);
+        await pool.query('UPDATE pastas SET favorito = ? WHERE id = ?', [favorito, req.params.id]);
         res.json({ message: 'Pasta atualizada com sucesso' });
     } catch (error) {
         console.error('Erro ao favoritar pasta:', error);
@@ -768,7 +788,7 @@ app.put('/api/pastas/:id/favoritar', async (req, res) => {
 app.put('/api/arquivos/:id/favoritar', async (req, res) => {
     try {
         const { favorito } = req.body;
-        await db.promise().query('UPDATE arquivos SET favorito = ? WHERE id = ?', [favorito, req.params.id]);
+        await pool.query('UPDATE arquivos SET favorito = ? WHERE id = ?', [favorito, req.params.id]);
         res.json({ message: 'Arquivo atualizado com sucesso' });
     } catch (error) {
         console.error('Erro ao favoritar arquivo:', error);
@@ -792,7 +812,7 @@ app.post('/api/compartilhar', async (req, res) => {
             return res.status(400).json({ error: 'ID da pasta inválido' });
         }
         
-        const [usuarios] = await db.promise().query('SELECT id FROM usuarios WHERE email = ?', [email_compartilhado]);
+        const [usuarios] = await pool.query('SELECT id FROM usuarios WHERE email = ?', [email_compartilhado]);
         
         if (usuarios.length === 0) {
             return res.status(404).json({ error: 'Usuário não encontrado' });
@@ -800,19 +820,19 @@ app.post('/api/compartilhar', async (req, res) => {
         
         const usuario_compartilhado_id = usuarios[0].id;
         
-        const [existente] = await db.promise().query(
+        const [existente] = await pool.query(
             'SELECT * FROM compartilhamentos WHERE pasta_id = ? AND usuario_compartilhado_id = ?', 
             [pastaId, usuario_compartilhado_id]
         );
         
         if (existente.length > 0) {
-            await db.promise().query(
+            await pool.query(
                 'UPDATE compartilhamentos SET permissao = ? WHERE pasta_id = ? AND usuario_compartilhado_id = ?', 
                 [permissao, pastaId, usuario_compartilhado_id]
             );
             res.json({ message: 'Permissão atualizada com sucesso' });
         } else {
-            await db.promise().query(
+            await pool.query(
                 'INSERT INTO compartilhamentos (pasta_id, usuario_compartilhado_id, permissao) VALUES (?, ?, ?)', 
                 [pastaId, usuario_compartilhado_id, permissao]
             );
@@ -824,10 +844,9 @@ app.post('/api/compartilhar', async (req, res) => {
     }
 });
 
-
 app.get('/api/compartilhados-por-mim/:usuario_id', async (req, res) => {
     try {
-        const [compartilhamentos] = await db.promise().query(`
+        const [compartilhamentos] = await pool.query(`
             SELECT 
                 c.id,
                 c.pasta_id,
@@ -856,7 +875,7 @@ app.put('/api/compartilhamentos/:pasta_id/:usuario_id', async (req, res) => {
         
         console.log('Atualizando permissão:', { pasta_id, usuario_id, permissao });
         
-        const [result] = await db.promise().query(
+        const [result] = await pool.query(
             'UPDATE compartilhamentos SET permissao = ? WHERE pasta_id = ? AND usuario_compartilhado_id = ?',
             [permissao, pasta_id, usuario_id]
         );
@@ -876,7 +895,7 @@ app.delete('/api/compartilhamentos/:id', async (req, res) => {
     try {
         const { id } = req.params;
         
-        const [result] = await db.promise().query(
+        const [result] = await pool.query(
             'DELETE FROM compartilhamentos WHERE id = ?', 
             [id]
         );
@@ -894,7 +913,7 @@ app.delete('/api/compartilhamentos/:id', async (req, res) => {
 
 app.get('/api/compartilhados/:us_id', async (req, res) => {
     try {
-        const [pastas] = await db.promise().query(`
+        const [pastas] = await pool.query(`
             SELECT 
                 p.*,
                 c.id as compartilhamento_id,
@@ -920,7 +939,7 @@ app.delete('/api/compartilhamentos/:pasta_id', async (req, res) => {
         
         console.log('Removendo compartilhamento:', { pasta_id, usuario_id });
         
-        const [result] = await db.promise().query(
+        const [result] = await pool.query(
             'DELETE FROM compartilhamentos WHERE pasta_id = ? AND usuario_compartilhado_id = ?', 
             [pasta_id, usuario_id]
         );
@@ -936,13 +955,12 @@ app.delete('/api/compartilhamentos/:pasta_id', async (req, res) => {
     }
 });
 
-
 app.put('/api/usuarios/:id', async (req, res) => {
     try {
         const { id } = req.params;
         const { nome, email, senha } = req.body;
         
-        const [existe] = await db.promise().query('SELECT * FROM usuarios WHERE email = ? AND id != ?', [email, id]);
+        const [existe] = await pool.query('SELECT * FROM usuarios WHERE email = ? AND id != ?', [email, id]);
         
         if (existe.length > 0) {
             return res.status(400).json({ error: 'Email já está em uso' });
@@ -951,9 +969,9 @@ app.put('/api/usuarios/:id', async (req, res) => {
         if (senha) {
             const saltRounds = 10;
             const senhaCriptografada = await bcrypt.hash(senha, saltRounds);
-            await db.promise().query('UPDATE usuarios SET nome = ?, email = ?, senha = ? WHERE id = ?', [nome, email, senhaCriptografada, id]);
+            await pool.query('UPDATE usuarios SET nome = ?, email = ?, senha = ? WHERE id = ?', [nome, email, senhaCriptografada, id]);
         } else {
-            await db.promise().query('UPDATE usuarios SET nome = ?, email = ? WHERE id = ?', [nome, email, id]);
+            await pool.query('UPDATE usuarios SET nome = ?, email = ? WHERE id = ?', [nome, email, id]);
         }
         
         res.json({ message: 'Perfil atualizado com sucesso' });
@@ -965,15 +983,16 @@ app.put('/api/usuarios/:id', async (req, res) => {
 
 app.get('/api/admin/usuarios', async (req, res) => {
     try {
-        const [usuarios] = await db.promise().query('SELECT id, nome, email, tipo, status, inativacao_justificativa, data_criacao FROM usuarios');
+        const [usuarios] = await pool.query('SELECT id, nome, email, tipo, status, inativacao_justificativa, data_criacao FROM usuarios');
         res.json(usuarios);
     } catch (error) {
         res.status(500).json({ error: 'Erro ao buscar usuários' });
     }
 });
+
 app.get('/api/admin/arquivos', async (req, res) => {
     try {
-        const [arquivos] = await db.promise().query('SELECT * FROM arquivos');
+        const [arquivos] = await pool.query('SELECT * FROM arquivos');
         res.json(arquivos);
     } catch (error) {
         res.status(500).json({ error: 'Erro ao buscar arquivos' });
@@ -982,7 +1001,7 @@ app.get('/api/admin/arquivos', async (req, res) => {
 
 app.get('/api/admin/pastas', async (req, res) => {
     try {
-        const [pastas] = await db.promise().query('SELECT * FROM pastas');
+        const [pastas] = await pool.query('SELECT * FROM pastas');
         res.json(pastas);
     } catch (error) {
         res.status(500).json({ error: 'Erro ao buscar pastas' });
@@ -991,7 +1010,7 @@ app.get('/api/admin/pastas', async (req, res) => {
 
 app.put('/api/admin/usuarios/:id/tornar-admin', async (req, res) => {
     try {
-        await db.promise().query('UPDATE usuarios SET tipo = "admin" WHERE id = ?', [req.params.id]);
+        await pool.query('UPDATE usuarios SET tipo = "admin" WHERE id = ?', [req.params.id]);
         res.json({ message: 'Usuário promovido a admin' });
     } catch (error) {
         res.status(500).json({ error: 'Erro ao promover usuário' });
@@ -1000,21 +1019,16 @@ app.put('/api/admin/usuarios/:id/tornar-admin', async (req, res) => {
 
 app.delete('/api/admin/usuarios/:id', async (req, res) => {
     try {
-        await db.promise().query('DELETE FROM usuarios WHERE id = ? AND tipo != "admin"', [req.params.id]);
+        await pool.query('DELETE FROM usuarios WHERE id = ? AND tipo != "admin"', [req.params.id]);
         res.json({ message: 'Usuário deletado com sucesso' });
     } catch (error) {
         res.status(500).json({ error: 'Erro ao deletar usuário' });
     }
 });
 
-
-app.listen(PORT, HOST, () => {
-    console.log(`✅ Servidor rodando na porta ${PORT}`);
-});
-
 app.get('/favicon.ico', async (req, res) => {
     try {
-        const [config] = await db.promise().query(
+        const [config] = await pool.query(
             'SELECT favicon, updated_at FROM configuracoes WHERE id = 1'
         );
         
@@ -1034,4 +1048,8 @@ app.get('/favicon.ico', async (req, res) => {
         console.error('Erro ao servir favicon:', error);
         res.status(500).end();
     }
+});
+
+app.listen(PORT, HOST, () => {
+    console.log(`✅ Servidor rodando na porta ${PORT}`);
 });
