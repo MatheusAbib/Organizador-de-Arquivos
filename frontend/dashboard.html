@@ -67,7 +67,7 @@
         <div class="modal-body">
             <div id="perfilVisualizacao">
                 <div style="text-align: center; margin-bottom: 2rem;">
-                    <div style="font-size: 4rem; margin-bottom: 1rem; opacity: 0.8;color: var(--icon-color);"><i class="fas fa-user-circle"></i></div>
+                    <div style="font-size: 4rem; margin-bottom: 1rem;color: var(--icon-color);"><i class="fas fa-user-circle"></i></div>
                     <h3 id="perfilNome" style="color: var(--text-secondary);">Carregando...</h3>
                     <p id="perfilEmail" style="color: var(--text-muted);">Carregando...</p>
                 </div>
@@ -92,7 +92,7 @@
                     <input type="password" id="editSenha" class="busca-input" style="width: 100%; padding-left: 45px;" placeholder="Deixe em branco para manter a atual">
                 </div>
                 
-                <div style="display: flex; gap: 1rem;">
+                <div style="display: flex; gap: 0.7rem;">
                     <button class="modal-header-btn primary" id="salvarperfil" onclick="salvarPerfil()" style="flex: 1;"><i class="fas fa-check"></i> Salvar</button>
                     <button class="modal-header-btn secondary" onclick="cancelarEdicaoPerfil()" style="flex: 1;"><i class="fas fa-times"></i> Cancelar</button>
                 </div>
@@ -240,7 +240,7 @@
             <select id="pastaDestinoSelect" style="width: 100%; padding: 0.8rem; border: 1px solid var(--border-color); border-radius: 12px; margin-bottom: 2rem; font-size: 1rem; background: var(--input-bg); color: var(--text-primary);">
                 <option value=""><i class="fas fa-folder"></i> Raiz (sem pasta)</option>
             </select>
-            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+            <div style="display: flex; gap: 0.7rem; justify-content: flex-end;">
                 <button class="modal-header-btn primary" onclick="confirmarMover()"><i class="fas fa-check"></i> Mover</button>
                 <button class="modal-header-btn secondary" onclick="fecharMoverModal()"><i class="fas fa-times"></i> Cancelar</button>
             </div>
@@ -294,7 +294,7 @@
         </div>
         <div class="modal-body">
             <p id="confirmMessage" style="margin-bottom: 2rem; color: var(--text-secondary);">Deseja continuar?</p>
-            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+            <div style="display: flex; gap: 0.7rem; justify-content: flex-end;">
                 <button class="modal-header-btn secondary" onclick="fecharConfirmModal()" type="button">
                     <i class="fas fa-times"></i> Cancelar
                 </button>
@@ -315,7 +315,7 @@
         <div class="modal-body">
             <p id="promptMessage" style="margin-bottom: 1rem; color: var(--text-secondary);"></p>
             <input type="text" id="promptInput" class="busca-input" style="width: 100%; margin-bottom: 2rem;" placeholder="Digite aqui...">
-            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+            <div style="display: flex; gap: 0.7rem; justify-content: flex-end;">
                 <button class="modal-header-btn secondary" onclick="fecharPromptModal()"><i class="fas fa-times"></i> Cancelar</button>
                 <button class="modal-header-btn primary" id="salvarperfil" onclick="executarPromptAction()"><i class="fas fa-check"></i> Confirmar</button>
             </div>
@@ -331,7 +331,7 @@
         </div>
         <div class="modal-body">
             <p id="alertMessage" style="margin-bottom: 2rem; color: var(--text-secondary);"></p>
-            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+            <div style="display: flex; gap: 0.7rem; justify-content: flex-end;">
                 <button class="modal-header-btn primary" onclick="fecharAlertModal()"><i class="fas fa-check"></i> OK</button>
             </div>
         </div>
@@ -355,7 +355,7 @@
                 <option value="editar">Editar (ver, mover, renomear)</option>
             </select>
             
-            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+            <div style="display: flex; gap: 0.7rem; justify-content: flex-end;">
                 <button class="modal-header-btn primary" onclick="confirmarCompartilhar()"><i class="fas fa-share-alt"></i> Compartilhar</button>
                 <button class="modal-header-btn secondary" onclick="fecharCompartilharModal()"><i class="fas fa-times"></i> Cancelar</button>
             </div>

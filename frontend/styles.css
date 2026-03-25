@@ -1491,10 +1491,8 @@ mark {
 }
 
 
-.modal-header-btn.editar {
-    background: var(--btn-primary-bg);
-    color: white;
-    border: 1px solid var(--btn-primary-bg);
+.modal-header-btn.editar:hover {
+    transform: translateY(-1px);
 }
 
 .modal-header-btn.primary:hover {
@@ -1540,8 +1538,12 @@ mark {
     border: 1px solid var(--border-color);
 }
 
+
+.modal-header-btn.secondary.dropdown-toggle:hover{
+    transform: translateY(-1px);
+}
+
 .modal-header-btn.secondary:hover {
-    background: var(--btn-secondary-hover);
     transform: translateY(-1px);
 }
 
