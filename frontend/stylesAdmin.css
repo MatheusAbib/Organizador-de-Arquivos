@@ -662,97 +662,6 @@ td {
     margin-bottom: 0.5rem;
 }
 
-.footer {
-    background: #2c2c2c;
-    color: #ffffff;
-    margin-top: 2rem;
-    padding: 2rem 1rem 0 1rem;
-    font-family: 'Inter', sans-serif;
-}
-
-.footer-content {
-    max-width: 1560px;
-    margin: 0 auto;
-}
-
-.footer-main {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 2rem;
-    margin-bottom: 2rem;
-    padding-bottom: 2rem;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
-}
-
-.footer-brand h2 {
-    font-size: 1.4rem;
-    font-weight: 600;
-    margin-bottom: 1rem;
-    color: white;
-    font-family: source-serif-pro, Georgia, Cambria, "Times New Roman", Times, serif;
-}
-
-.footer-brand h2 i {
-    color: #b88b4a;
-    margin-right: 0.3rem;
-}
-
-.footer-description {
-    color: #a0a8c0;
-    line-height: 1.6;
-    margin-bottom: 1.5rem;
-    font-size: 0.9rem;
-}
-
-.footer-badges {
-    display: flex;
-    gap: 0.8rem;
-    flex-wrap: wrap;
-}
-
-.footer-links-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1.5rem;
-}
-
-.footer-column h3 {
-    color: white;
-    font-size: 1rem;
-    font-weight: 600;
-    margin-bottom: 1.2rem;
-    letter-spacing: 0.5px;
-}
-
-.footer-column ul {
-    list-style: none;
-    padding: 0;
-}
-
-.footer-column ul li {
-    margin-bottom: 0.8rem;
-}
-
-.footer-column ul li a {
-    color: #a0a8c0e8;
-    text-decoration: none;
-    font-size: 0.85rem;
-    transition: all 0.3s;
-    display: inline-block;
-}
-
-.footer-column ul li a:hover {
-    color: #b88b4a;
-}
-
-.footer-corporate {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 2rem;
-    margin-bottom: 2rem;
-    padding-bottom: 2rem;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
-}
 
 .corporate-info {
     display: grid;
@@ -827,12 +736,6 @@ td {
     color: #a0a8c0;
     font-size: 0.75rem;
     font-weight: 500;
-}
-
-.footer-bottom {
-    background: #2c2c2c;
-    margin: 0 -1rem;
-    padding: 1.5rem 1rem;
 }
 
 .bottom-container {
@@ -940,19 +843,6 @@ width: 415px;
         padding: 1.5rem;
     }
     
-    .footer-main {
-        grid-template-columns: 1.2fr 2fr;
-        gap: 3rem;
-    }
-    
-    .footer-links-grid {
-        grid-template-columns: repeat(4, 1fr);
-    }
-    
-    .footer-corporate {
-        grid-template-columns: 2fr 1fr;
-        gap: 3rem;
-    }
     
     .corporate-info {
         grid-template-columns: repeat(2, 1fr);

@@ -1490,6 +1490,13 @@ mark {
     border: 1px solid var(--btn-primary-bg);
 }
 
+
+.modal-header-btn.editar {
+    background: var(--btn-primary-bg);
+    color: white;
+    border: 1px solid var(--btn-primary-bg);
+}
+
 .modal-header-btn.primary:hover {
     background: var(--btn-primary-hover);
     border-color: var(--btn-primary-hover);
@@ -2468,9 +2475,13 @@ body.dark-mode .paginacao-rows-selector select {
     font-size: 0.8rem;
 }
 
-.developed-by strong {
+.developed-by a {
     color: var(--icon-color);
     font-weight: 600;
+}
+
+.developed-by a:hover{
+    text-decoration:underline;
 }
 
 #alertModal .modal-content {

@@ -371,12 +371,21 @@ h1, h2, h3, .serif-text {
 
 .footer-brand span {
     font-weight: 500;
-    font-size: 0.9rem;
+    font-size: 1rem;
 }
 
 .footer-copyright {
     color: var(--footer-text-secondary);
-    font-size: 0.8rem;
+    font-size: 0.9rem;
+}
+
+.footer-copyright a{
+    color: var(--icon-color);
+    font-weight: 600;
+    text-decoration: none;
+}
+.footer-copyright a:hover{
+    text-decoration:underline;
 }
 
 @media (min-width: 480px) {
@@ -532,7 +541,7 @@ h1, h2, h3, .serif-text {
                 <span>Organizador de Arquivos</span>
             </div>
             <div class="footer-copyright">
-                © 2026 Matheus Abib
+                © 2026 <a href="https://matheus-abib-portfolio.netlify.app/" target="_blank"><strong></strong>Matheus Abib</strong></a>
             </div>
         </div>
     </footer>
@@ -571,39 +580,44 @@ const API_URL = window.location.hostname === 'localhost' || window.location.host
             }
         }
 
-        async function fazerCadastro() {
-            const nome = document.getElementById('cadastroNome').value;
-            const email = document.getElementById('cadastroEmail').value;
-            const senha = document.getElementById('cadastroSenha').value;
-            const messageDiv = document.getElementById('cadastroMessage');
+      async function fazerCadastro() {
+    const nome = document.getElementById('cadastroNome').value;
+    const email = document.getElementById('cadastroEmail').value;
+    const senha = document.getElementById('cadastroSenha').value;
+    const messageDiv = document.getElementById('cadastroMessage');
 
-            if (!nome || !email || !senha) {
-                messageDiv.className = 'message error';
-                messageDiv.textContent = 'Preencha todos os campos!';
-                return;
-            }
+    if (!nome || !email || !senha) {
+        messageDiv.className = 'message error';
+        messageDiv.textContent = 'Preencha todos os campos!';
+        return;
+    }
 
-            try {
-                const response = await fetch(`${API_URL}/api/cadastro`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ nome, email, senha })
-                });
+    try {
+        const response = await fetch(`${API_URL}/api/cadastro`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ nome, email, senha })
+        });
 
-                const data = await response.json();
+        const data = await response.json();
 
-                if (response.ok) {
-                    messageDiv.className = 'message success';
-                    messageDiv.textContent = 'Cadastro realizado com sucesso! Faça login.';
-                    
-                    document.getElementById('cadastroNome').value = '';
-                    document.getElementById('cadastroEmail').value = '';
-                    document.getElementById('cadastroSenha').value = '';
-                    
-                    setTimeout(() => showTab('login'), 1500);
-                } else {
+        if (response.ok) {
+            messageDiv.className = 'message success';
+            messageDiv.textContent = 'Cadastro realizado com sucesso! Realizando login...';
+            
+            document.getElementById('cadastroNome').value = '';
+            document.getElementById('cadastroEmail').value = '';
+            document.getElementById('cadastroSenha').value = '';
+            
+            setTimeout(() => {
+                document.getElementById('loginEmail').value = email;
+                document.getElementById('loginSenha').value = senha;
+                
+                fazerLogin();
+            }, 1000);
+        }else {
                     messageDiv.className = 'message error';
                     messageDiv.textContent = data.error || 'Erro ao cadastrar';
                 }
