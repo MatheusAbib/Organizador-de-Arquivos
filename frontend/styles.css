@@ -1450,11 +1450,11 @@ mark {
 
 .modal-header h2 {
     color: var(--text-secondary);
-    font-size: 1.1rem;
+    font-size: 1.2rem;
     font-weight: 600;
     display: flex;
     align-items: center;
-    gap: 0.3rem;
+    gap: 0.6rem;
     font-family: source-serif-pro, Georgia, Cambria, "Times New Roman", Times, serif;
 }
 
@@ -1537,7 +1537,6 @@ mark {
     color: var(--text-secondary);
     border: 1px solid var(--border-color);
 }
-
 
 .modal-header-btn.secondary.dropdown-toggle:hover{
     transform: translateY(-1px);
