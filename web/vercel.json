@@ -1,0 +1,16 @@
+﻿{
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "http://64.227.6.51:3001/api/:path*"
+    },
+    {
+      "source": "/uploads/:path*",
+      "destination": "http://64.227.6.51:3001/uploads/:path*"
+    },
+    {
+      "source": "/favicon.ico",
+      "destination": "http://64.227.6.51:3001/favicon.ico"
+    }
+  ]
+}
