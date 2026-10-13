@@ -51,21 +51,6 @@ Criado para resolver problemas comuns de organização digital, o sistema oferec
 
 ---
 
-## 🏗️ Arquitetura
-
-O projeto é dividido em duas aplicações independentes:
-
-```
-Organizador-Arquivos/
-├── backend/     → API REST (Node.js + Express + MySQL)
-├── web/         → Interface (React + TypeScript + Vite)
-├── uploads/     → Arquivos dos usuários
-```
-
-O frontend consome a API do backend via `/api/*`, com autenticação JWT.
-
----
-
 ## ✨ Funcionalidades
 
 ### 🔐 Autenticação
