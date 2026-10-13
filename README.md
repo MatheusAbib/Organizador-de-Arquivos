@@ -1,12 +1,16 @@
+
 # 📁 Organizador de Arquivos
 
 O **Organizador de Arquivos** é uma plataforma web completa para gerenciamento de arquivos, desenvolvida para oferecer uma solução robusta e intuitiva para organização, compartilhamento e colaboração. Com suporte a mais de 50 formatos de arquivo, o sistema permite que usuários organizem seus documentos em pastas, compartilhem com outros usuários e mantenham tudo sincronizado em um ambiente seguro.
 
-> 🔗 **Acesse o projeto online:** [organizador-arquivos.vercel.app](https://organizador-arquivos.vercel.app/)
+_> 🔗_ **Acesse o projeto online:** [organizador-arquivos.vercel.app](https://organizador-arquivos.vercel.app/)
+
+---
 
 ### 🎯 Propósito
 
 Criado para resolver problemas comuns de organização digital, o sistema oferece:
+
 - ✅ Organização hierárquica de arquivos em pastas e subpastas
 - ✅ Compartilhamento seguro com níveis de permissão
 - ✅ Sistema de favoritos para acesso rápido
@@ -18,9 +22,12 @@ Criado para resolver problemas comuns de organização digital, o sistema oferec
 - ✅ Autenticação JWT com rotas protegidas
 - ✅ Tema claro/escuro persistente
 
+---
+
 ## 🚀 Tecnologias Utilizadas
 
 ### Frontend
+
 ![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-8-646CFF?style=for-the-badge&logo=vite&logoColor=white)
@@ -28,6 +35,7 @@ Criado para resolver problemas comuns de organização digital, o sistema oferec
 ![CSS](https://img.shields.io/badge/CSS_Puro-000000?style=for-the-badge&logo=css3&logoColor=white)
 
 ### Backend
+
 ![Node.js](https://img.shields.io/badge/Node.js-43853D?style=for-the-badge&logo=node.js&logoColor=white)
 ![Express.js](https://img.shields.io/badge/Express.js-5-404D59?style=for-the-badge&logo=express&logoColor=white)
 ![MySQL](https://img.shields.io/badge/MySQL-005C84?style=for-the-badge&logo=mysql&logoColor=white)
@@ -36,9 +44,12 @@ Criado para resolver problemas comuns de organização digital, o sistema oferec
 ![bcrypt](https://img.shields.io/badge/bcrypt-senha-8B4513?style=for-the-badge)
 
 ### Bibliotecas de Visualização
+
 ![mammoth](https://img.shields.io/badge/mammoth-Word-2B579A?style=for-the-badge&logo=microsoftword&logoColor=white)
 ![xlsx](https://img.shields.io/badge/xlsx-Excel-217346?style=for-the-badge&logo=microsoftexcel&logoColor=white)
 ![pptx-preview](https://img.shields.io/badge/pptx--preview-PowerPoint-D24726?style=for-the-badge&logo=microsoftpowerpoint&logoColor=white)
+
+---
 
 ## 🏗️ Arquitetura
 
@@ -54,9 +65,12 @@ Organizador-Arquivos/
 
 O frontend consome a API do backend via `/api/*`, com autenticação JWT.
 
+---
+
 ## ✨ Funcionalidades
 
 ### 🔐 Autenticação
+
 - Login com JWT (expiração de 7 dias)
 - Cadastro de usuários
 - Rotas protegidas no frontend e no backend
@@ -64,6 +78,7 @@ O frontend consome a API do backend via `/api/*`, com autenticação JWT.
 - Logout com confirmação
 
 ### 📂 Gerenciamento de Arquivos
+
 - Upload de múltiplos arquivos (até 1GB)
 - Criação de pastas e subpastas (hierarquia ilimitada)
 - Renomear, mover e excluir arquivos
@@ -73,6 +88,7 @@ O frontend consome a API do backend via `/api/*`, com autenticação JWT.
 - Paginação configurável
 
 ### 📁 Gerenciamento de Pastas
+
 - Árvore de pastas com expandir/recolher
 - Contador de arquivos por pasta (recursivo)
 - Navegação com breadcrumb clicável
@@ -80,6 +96,7 @@ O frontend consome a API do backend via `/api/*`, com autenticação JWT.
 - Subpastas visíveis dentro da pasta pai
 
 ### 🔗 Compartilhamento
+
 - Compartilhar pastas com outros usuários por email
 - Permissões: `visualizar` ou `editar`
 - Gerenciar compartilhamentos feitos e recebidos
@@ -87,23 +104,27 @@ O frontend consome a API do backend via `/api/*`, com autenticação JWT.
 - Respeitar permissões (bloqueia ações quando apenas visualizar)
 
 ### ⭐ Favoritos
+
 - Marcar arquivos como favoritos
 - Modal dedicado com todos os favoritos
 - Contador na barra de navegação
 - Estrela preenchida em amarelo quando ativo
 
 ### 💬 Comentários
+
 - Adicionar comentários aos arquivos
 - Editar ou remover comentários
 - Ícone destacado quando o arquivo tem comentário
 
 ### 🔍 Busca Avançada
+
 - Busca em tempo real por nome
 - Filtros por tipo (PDF, Word, Excel, PowerPoint, Imagem, Texto, Vídeo)
 - Contagem de itens por filtro
 - Botão para limpar busca
 
 ### 🖼️ Visualizadores Embutidos
+
 - **Imagem** — visualizador fullscreen com zoom
 - **PDF** — iframe nativo com opções de download/abrir em nova aba
 - **Word** (.docx) — renderização HTML via mammoth
@@ -112,11 +133,13 @@ O frontend consome a API do backend via `/api/*`, com autenticação JWT.
 - **Texto** (.txt) — exibição monoespaçada com copiar/imprimir
 
 ### 👤 Perfil de Usuário
+
 - Editar nome, email e senha
 - Tema claro/escuro persistente
 - Modal de perfil acessível pelo menu do usuário
 
 ### 👑 Painel Administrativo
+
 - Estatísticas do sistema (usuários, arquivos, pastas, espaço)
 - Tabela de usuários com paginação
 - Ver/editar qualquer usuário
@@ -125,12 +148,15 @@ O frontend consome a API do backend via `/api/*`, com autenticação JWT.
 - Excluir usuário (com cascade de arquivos e pastas)
 
 ### 🎨 Interface
+
 - Design responsivo (mobile, tablet, desktop)
 - Tema claro/escuro com persistência
 - Sistema de notificações (toast)
 - Loaders e spinners em todas as operações
 - Modal de confirmação para ações destrutivas
 - Validação de formulários com feedback visual
+
+---
 
 ## 📊 Formatos Suportados
 
@@ -144,7 +170,7 @@ O frontend consome a API do backend via `/api/*`, com autenticação JWT.
 | 💻 Código | HTML, CSS, JS, TS, PHP, PY, JAVA, C/C++, JSON, XML, SQL |
 | 🎨 Design | PSD, AI, EPS, CDR, DWG, DXF |
 
-```
+---
 
 ## 🔒 Segurança
 
