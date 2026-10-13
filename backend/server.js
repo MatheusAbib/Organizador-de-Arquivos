@@ -39,7 +39,9 @@ const storage = multer.diskStorage({
         cb(null, uploadDir);
     },
     filename: (req, file, cb) => {
-        const uniqueName = Date.now() + '-' + file.originalname;
+        const nomeCorrigido = Buffer.from(file.originalname, 'latin1').toString('utf8');
+        file.originalname = nomeCorrigido;
+        const uniqueName = Date.now() + '-' + nomeCorrigido;
         cb(null, uniqueName);
     }
 });
