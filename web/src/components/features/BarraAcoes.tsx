@@ -11,9 +11,7 @@ interface BarraAcoesProps {
   visualizacao: Visualizacao
   onVisualizacaoChange: (valor: Visualizacao) => void
   onUpload: (arquivos: FileList) => void
-  onNovaPasta: () => void
   mostrarAcoes?: boolean
-  dentroDePasta?: boolean
 }
 
 export function BarraAcoes({
@@ -22,9 +20,7 @@ export function BarraAcoes({
   visualizacao,
   onVisualizacaoChange,
   onUpload,
-  onNovaPasta,
-  mostrarAcoes = true,
-  dentroDePasta = false
+  mostrarAcoes = true
 }: BarraAcoesProps) {
   const inputRef = useRef<HTMLInputElement>(null)
 

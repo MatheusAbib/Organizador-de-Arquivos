@@ -1,5 +1,5 @@
 ﻿import { useEffect, useState } from 'react'
-import { FiFolder, FiStar } from 'react-icons/fi'
+import { FiStar } from 'react-icons/fi'
 import { Modal } from '@/components/ui/Modal'
 import { EstadoVazio } from '@/components/ui/EstadoVazio'
 import { CardArquivo } from '@/components/features/CardArquivo'

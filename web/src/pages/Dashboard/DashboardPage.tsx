@@ -191,7 +191,7 @@ export function DashboardPage() {
 
   const [arquivosCompartilhados, setArquivosCompartilhados] = useState<Arquivo[]>([])
   const [subpastasCompartilhadas, setSubpastasCompartilhadas] = useState<Pasta[]>([])
-  const [carregandoCompartilhada, setCarregandoCompartilhada] = useState(false)
+  const [, setCarregandoCompartilhada] = useState(false)
 
   const recarregarPastaAtiva = useCallback(async () => {
     if (pastaAtiva === null || !usuario) return
@@ -827,9 +827,7 @@ export function DashboardPage() {
             visualizacao={visualizacao}
             onVisualizacaoChange={setVisualizacao}
             onUpload={handleUpload}
-            onNovaPasta={() => abrirModalNovaPasta(pastaAtiva)}
             mostrarAcoes={podeEditar}
-            dentroDePasta={pastaAtiva !== null}
           />
 
           {caminhoPastas.length > 0 && (
@@ -921,7 +919,7 @@ export function DashboardPage() {
               titulo="Algo deu errado"
               descricao={erro}
               acao={
-                <Button onClick={carregarTudo} icon={<FiRefreshCw />}>
+                <Button onClick={() => void carregarTudo()} icon={<FiRefreshCw />}>
                   Tentar novamente
                 </Button>
               }

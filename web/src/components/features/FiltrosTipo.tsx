@@ -1,8 +1,6 @@
 ﻿import {
-  FiFile,
   FiFileText,
   FiImage,
-  FiMusic,
   FiVideo,
   FiGrid,
   FiArchive
