@@ -3,7 +3,7 @@
 
 O **Organizador de Arquivos** é uma plataforma web completa para gerenciamento de arquivos, desenvolvida para oferecer uma solução robusta e intuitiva para organização, compartilhamento e colaboração. Com suporte a mais de 50 formatos de arquivo, o sistema permite que usuários organizem seus documentos em pastas, compartilhem com outros usuários e mantenham tudo sincronizado em um ambiente seguro.
 
-> 🔗 **Acesse online:** (https://organizador-arquivos.vercel.app/dashboard)
+> 🔗 **Acesse online:** (https://organizador-arquivos.vercel.app)
 
 ---
 
