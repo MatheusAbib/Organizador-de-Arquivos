@@ -60,7 +60,6 @@ Organizador-Arquivos/
 ├── backend/     → API REST (Node.js + Express + MySQL)
 ├── web/         → Interface (React + TypeScript + Vite)
 ├── uploads/     → Arquivos dos usuários
-└── temp/        → ZIPs temporários (download de pastas)
 ```
 
 O frontend consome a API do backend via `/api/*`, com autenticação JWT.
