@@ -1,0 +1,39 @@
+﻿.estado-vazio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 3rem 1.5rem;
+  background: var(--bg-surface);
+  border: 1px dashed var(--border-base);
+  border-radius: var(--radius-2xl);
+  gap: 0.5rem;
+}
+
+.estado-vazio-icone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  color: var(--accent-base);
+  opacity: 0.5;
+  margin-bottom: 0.5rem;
+}
+
+.estado-vazio-titulo {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-soft);
+}
+
+.estado-vazio-descricao {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  max-width: 380px;
+  line-height: 1.5;
+}
+
+.estado-vazio-acao {
+  margin-top: 0.75rem;
+}

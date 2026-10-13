@@ -1,0 +1,112 @@
+﻿.visualizador-texto {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  animation: visualizador-fade 0.2s ease;
+}
+
+.visualizador-texto-caixa {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 900px;
+  max-height: 90vh;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-base);
+  border-radius: var(--radius-2xl);
+  overflow: hidden;
+}
+
+.visualizador-texto-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  background: var(--bg-body);
+  border-bottom: 1px solid var(--border-base);
+}
+
+.visualizador-texto-titulo {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--font-sans);
+}
+
+.visualizador-texto-acoes {
+  display: flex;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.visualizador-texto-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--border-base);
+  border-radius: 50%;
+  background: var(--bg-surface);
+  color: var(--text-soft);
+  font-size: 0.95rem;
+  transition: all var(--transition-base);
+}
+
+.visualizador-texto-btn:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent-base);
+  color: var(--accent-base);
+  transform: scale(1.08);
+}
+
+.visualizador-texto-btn-fechar:hover {
+  background: #c44536;
+  border-color: #c44536;
+  color: #ffffff;
+}
+
+.visualizador-texto-conteudo {
+  flex: 1;
+  overflow: auto;
+  padding: 1.5rem;
+  background: var(--bg-body);
+}
+
+.visualizador-texto-pre {
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.visualizador-texto-estado {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 2rem;
+}
+
+.visualizador-texto-estado-erro {
+  color: #e53e3e;
+}
+
+@keyframes visualizador-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

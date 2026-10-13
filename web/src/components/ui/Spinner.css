@@ -1,0 +1,47 @@
+﻿.spinner-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 2rem;
+}
+
+.spinner-wrap-centralizado {
+  min-height: 40vh;
+  justify-content: center;
+}
+
+.spinner {
+  border: 3px solid var(--border-base);
+  border-top-color: var(--accent-base);
+  border-radius: 50%;
+  animation: spinner-girar 0.8s linear infinite;
+}
+
+.spinner-sm {
+  width: 20px;
+  height: 20px;
+  border-width: 2px;
+}
+
+.spinner-md {
+  width: 36px;
+  height: 36px;
+}
+
+.spinner-lg {
+  width: 52px;
+  height: 52px;
+  border-width: 4px;
+}
+
+.spinner-mensagem {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+@keyframes spinner-girar {
+  to {
+    transform: rotate(360deg);
+  }
+}

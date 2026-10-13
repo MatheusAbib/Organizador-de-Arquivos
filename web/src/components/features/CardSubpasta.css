@@ -1,0 +1,105 @@
+﻿.card-subpasta {
+  display: flex;
+  flex-direction: column;
+  padding: 0.75rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-base);
+  border-radius: var(--radius-xl);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  overflow: hidden;
+   border-color: var(--accent-base);
+}
+
+.card-subpasta-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.6rem;
+}
+
+.card-subpasta-tipo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--radius-pill);
+  background: rgba(184, 139, 74, 0.15);
+  color: var(--accent-base);
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.card-subpasta-tipo svg {
+  font-size: 0.7rem;
+}
+
+.card-subpasta-acao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  opacity: 0.7;
+  transition: all var(--transition-base);
+}
+
+.card-subpasta:hover .card-subpasta-acao {
+  opacity: 1;
+}
+
+.card-subpasta-acao:hover {
+  background: var(--bg-hover);
+  color: var(--accent-base);
+}
+
+.card-subpasta-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius-md);
+  background: var(--bg-body);
+  margin-bottom: 0.6rem;
+  transition: transform var(--transition-base);
+}
+
+.card-subpasta-preview svg {
+  font-size: 3rem;
+  color: var(--accent-base);
+  transition: transform var(--transition-base);
+}
+
+.card-subpasta:hover .card-subpasta-preview svg {
+  transform: scale(1.02);
+}
+
+.card-subpasta-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.card-subpasta-nome {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--font-sans);
+}
+
+.card-subpasta-contagem {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}

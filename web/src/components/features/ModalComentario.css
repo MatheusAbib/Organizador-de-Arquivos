@@ -1,0 +1,43 @@
+﻿.modal-form-descricao {
+  font-size: 0.9rem;
+  color: var(--text-soft);
+}
+
+.modal-form-textarea {
+  width: 100%;
+  padding: 0.8rem 1rem;
+  border: 2px solid var(--border-base);
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 100px;
+  transition: all var(--transition-base);
+}
+
+.modal-form-textarea:focus {
+  outline: none;
+  border-color: var(--accent-base);
+  box-shadow: 0 0 0 3px rgba(184, 139, 74, 0.1);
+}
+
+.modal-form-textarea::placeholder {
+  color: var(--text-muted);
+}
+
+.modal-form-textarea-erro {
+  border-color: #e53e3e;
+}
+
+.modal-form-textarea-erro:focus {
+  box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.1);
+}
+
+.modal-form-erro-texto {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.75rem;
+  color: #e53e3e;
+}

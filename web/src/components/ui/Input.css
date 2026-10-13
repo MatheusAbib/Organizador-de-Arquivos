@@ -1,0 +1,76 @@
+﻿.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  width: 100%;
+}
+
+.input-label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-soft);
+}
+
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-icon {
+  position: absolute;
+  left: 1rem;
+  display: flex;
+  align-items: center;
+  color: var(--accent-base);
+  pointer-events: none;
+  font-size: 1rem;
+}
+
+.input-field {
+  width: 100%;
+  padding: 0.8rem 1rem;
+  border: 2px solid var(--border-base);
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  transition: all var(--transition-base);
+}
+
+.input-field.input-with-icon {
+  padding-left: 2.75rem;
+}
+
+.input-field::placeholder {
+  color: var(--text-muted);
+}
+
+.input-field:focus {
+  outline: none;
+  border-color: var(--accent-base);
+  box-shadow: 0 0 0 3px rgba(184, 139, 74, 0.1);
+}
+
+.input-field:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.input-field.input-error {
+  border-color: #e53e3e;
+}
+
+.input-field.input-error:focus {
+  border-color: #e53e3e;
+  box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.1);
+}
+
+.input-message {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.input-message-error {
+  color: #e53e3e;
+}

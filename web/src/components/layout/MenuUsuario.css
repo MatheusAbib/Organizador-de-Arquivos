@@ -1,0 +1,126 @@
+﻿.menu-usuario {
+  position: relative;
+}
+
+.menu-usuario-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.9rem;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--bg-hover);
+  color: var(--text-soft);
+  font-size: 0.8rem;
+  font-weight: 500;
+  transition: all var(--transition-base);
+}
+
+.menu-usuario-btn:hover {
+  color: var(--accent-base);
+}
+
+.menu-usuario-avatar {
+  font-size: 1rem;
+  color: var(--accent-base);
+}
+
+.menu-usuario-seta {
+  font-size: 0.75rem;
+  opacity: 0.7;
+}
+
+.menu-usuario-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 220px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-base);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  animation: menu-fade 0.15s ease;
+  z-index: 200;
+}
+
+.menu-usuario-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.85rem 1rem;
+  background: var(--bg-body);
+  border-bottom: 1px solid var(--border-base);
+  color: var(--text-soft);
+}
+
+.menu-usuario-header strong {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.menu-usuario-header small {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  word-break: break-all;
+}
+
+.menu-usuario-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border: none;
+  background: transparent;
+  color: var(--text-soft);
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-align: left;
+  transition: background var(--transition-base);
+}
+
+.menu-usuario-item:hover {
+  background: var(--bg-hover);
+}
+
+.menu-usuario-item svg {
+  font-size: 0.95rem;
+  color: var(--accent-base);
+  flex-shrink: 0;
+}
+
+.menu-usuario-item-sair {
+  color: #c44536;
+}
+
+.menu-usuario-item-sair svg {
+  color: #c44536;
+}
+
+.menu-usuario-divisor {
+  height: 1px;
+  background: var(--border-base);
+  margin: 0.2rem 0;
+}
+
+@keyframes menu-fade {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 480px) {
+  .menu-usuario-nome {
+    display: none;
+  }
+
+  .menu-usuario-dropdown {
+    right: -8px;
+  }
+}

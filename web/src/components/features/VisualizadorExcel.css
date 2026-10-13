@@ -1,0 +1,195 @@
+﻿.visualizador-excel {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  animation: visualizador-fade 0.2s ease;
+}
+
+.visualizador-excel-caixa {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 1200px;
+  height: 90vh;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-base);
+  border-radius: var(--radius-2xl);
+  overflow: hidden;
+}
+
+.visualizador-excel-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  background: var(--bg-body);
+  border-bottom: 1px solid var(--border-base);
+}
+
+.visualizador-excel-titulo {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--font-sans);
+}
+
+.visualizador-excel-acoes {
+  display: flex;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.visualizador-excel-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--border-base);
+  border-radius: 50%;
+  background: var(--bg-surface);
+  color: var(--text-soft);
+  font-size: 0.95rem;
+  transition: all var(--transition-base);
+}
+
+.visualizador-excel-btn:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent-base);
+  color: var(--accent-base);
+  transform: scale(1.08);
+}
+
+.visualizador-excel-btn-fechar:hover {
+  background: #c44536;
+  border-color: #c44536;
+  color: #ffffff;
+}
+
+.visualizador-excel-abas {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.5rem 1rem;
+  background: var(--bg-body);
+  border-bottom: 1px solid var(--border-base);
+  overflow-x: auto;
+}
+
+.visualizador-excel-aba {
+  padding: 0.4rem 0.9rem;
+  border: 1px solid var(--border-base);
+  border-radius: var(--radius-pill);
+  background: var(--bg-surface);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: all var(--transition-base);
+}
+
+.visualizador-excel-aba:hover:not(.visualizador-excel-aba-ativa) {
+  color: var(--text-soft);
+  border-color: var(--accent-base);
+}
+
+.visualizador-excel-aba-ativa {
+  background: var(--accent-base);
+  border-color: var(--accent-base);
+  color: #ffffff;
+}
+
+.visualizador-excel-conteudo {
+  flex: 1;
+  overflow: auto;
+  background: var(--bg-body);
+  padding: 1rem;
+}
+
+.visualizador-excel-tabela {
+  background: #ffffff;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  display: inline-block;
+  min-width: 100%;
+}
+
+.visualizador-excel-tabela table {
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  color: #2c2c2c;
+  font-family: 'Segoe UI', Arial, sans-serif;
+}
+
+.visualizador-excel-tabela th {
+  background: #1e6f3f;
+  color: #ffffff;
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  border: 1px solid #185a32;
+  white-space: nowrap;
+}
+
+.visualizador-excel-tabela td {
+  border: 1px solid #e0e0e0;
+  padding: 0.35rem 0.6rem;
+  min-width: 60px;
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.visualizador-excel-tabela tr:nth-child(even) td {
+  background: #fafafa;
+}
+
+.visualizador-excel-tabela tr:hover td {
+  background: #f0f7f2;
+}
+
+.visualizador-excel-estado {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 3rem 1rem;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.visualizador-excel-estado-erro {
+  color: #c44536;
+}
+
+.visualizador-excel-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border-base);
+  border-top-color: var(--accent-base);
+  border-radius: 50%;
+  animation: visualizador-excel-spin 0.8s linear infinite;
+}
+
+@keyframes visualizador-excel-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes visualizador-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}

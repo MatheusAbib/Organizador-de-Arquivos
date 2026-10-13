@@ -6,7 +6,8 @@ const path = require('path');
 const fs = require('fs');
 const bcrypt = require('bcrypt');
 const archiver = require('archiver');
-require('dotenv').config();
+require('dotenv').config()
+const { gerarToken, authMiddleware, adminMiddleware } = require('./middleware/auth');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -140,10 +141,10 @@ const upload = multer({
 });
 
 const pool = mysql.createPool({
-    host: process.env.MYSQL_ADDON_HOST,
-    user: process.env.MYSQL_ADDON_USER,
-    password: process.env.MYSQL_ADDON_PASSWORD,
-    database: process.env.MYSQL_ADDON_DB,
+    host: process.env.MYSQL_ADDON_HOST || process.env.DB_HOST,
+    user: process.env.MYSQL_ADDON_USER || process.env.DB_USER,
+    password: process.env.MYSQL_ADDON_PASSWORD || process.env.DB_PASSWORD,
+    database: process.env.MYSQL_ADDON_DB || process.env.DB_NAME,
     port: process.env.MYSQL_ADDON_PORT || 3306,
     waitForConnections: true,
     connectionLimit: 10,
@@ -206,17 +207,16 @@ app.post('/api/cadastro', async (req, res) => {
             [nome, email, senhaCriptografada]
         );
         
-        res.status(201).json({ 
-            message: 'Usuário cadastrado com sucesso',
-            usuario: { id: result.insertId, nome, email }
-        });
+        const usuario = { id: result.insertId, nome, email, tipo: 'user' }
+        const token = gerarToken(usuario)
+        res.status(201).json({ message: 'Usuário cadastrado com sucesso', token, usuario });
     } catch (error) {
         console.error('Erro no cadastro:', error);
         res.status(500).json({ error: 'Erro no servidor' });
     }
 });
 
-app.put('/api/admin/usuarios/:id', async (req, res) => {
+app.put('/api/admin/usuarios/:id', authMiddleware, adminMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
         const { nome, email, senha } = req.body;
@@ -241,7 +241,7 @@ app.put('/api/admin/usuarios/:id', async (req, res) => {
     }
 });
 
-app.put('/api/admin/usuarios/:id/inativar', async (req, res) => {
+app.put('/api/admin/usuarios/:id/inativar', authMiddleware, adminMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
         const { justificativa } = req.body;
@@ -254,7 +254,7 @@ app.put('/api/admin/usuarios/:id/inativar', async (req, res) => {
     }
 });
 
-app.put('/api/admin/usuarios/:id/reativar', async (req, res) => {
+app.put('/api/admin/usuarios/:id/reativar', authMiddleware, adminMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
         
@@ -288,22 +288,16 @@ app.post('/api/login', async (req, res) => {
             return res.status(401).json({ error: 'Senha incorreta' });
         }
         
-        res.json({ 
-            message: 'Login realizado com sucesso',
-            usuario: { 
-                id: usuario.id, 
-                nome: usuario.nome, 
-                email: usuario.email,
-                tipo: usuario.tipo
-            }
-        });
+        const dadosUsuario = { id: usuario.id, nome: usuario.nome, email: usuario.email, tipo: usuario.tipo }
+        const token = gerarToken(dadosUsuario)
+        res.json({ message: 'Login realizado com sucesso', token, usuario: dadosUsuario });
     } catch (error) {
         console.error('Erro no login:', error);
         res.status(500).json({ error: 'Erro no servidor' });
     }
 });
 
-app.post('/api/upload', upload.single('arquivo'), async (req, res) => {
+app.post('/api/upload', authMiddleware, upload.single('arquivo'), async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ error: 'Nenhum arquivo enviado' });
@@ -312,11 +306,6 @@ app.post('/api/upload', upload.single('arquivo'), async (req, res) => {
         const { usuario_id, pasta_id } = req.body;
         const arquivo = req.file;
 
-        console.log('Upload recebido:', {
-            usuario_id,
-            pasta_id: pasta_id || 'null (raiz)',
-            arquivo: arquivo.originalname
-        });
 
         let tipo = 'outros';
         const ext = path.extname(arquivo.originalname).toLowerCase();
@@ -344,7 +333,6 @@ app.post('/api/upload', upload.single('arquivo'), async (req, res) => {
             [usuario_id, arquivo.originalname, arquivo.filename, tipo, arquivo.size, pastaIdValue]
         );
 
-        console.log('Arquivo salvo no banco com ID:', result.insertId, 'pasta_id:', pastaIdValue);
 
         res.json({ 
             message: 'Arquivo enviado com sucesso',
@@ -362,7 +350,20 @@ app.post('/api/upload', upload.single('arquivo'), async (req, res) => {
     }
 });
 
-app.get('/api/arquivos/:usuario_id', async (req, res) => {
+app.get('/api/arquivos/:usuario_id/em-pastas', authMiddleware, async (req, res) => {
+    try {
+        const [arquivos] = await pool.query(
+            'SELECT a.* FROM arquivos a INNER JOIN pastas p ON a.pasta_id = p.id WHERE p.usuario_id = ? ORDER BY a.data_upload DESC',
+            [req.params.usuario_id]
+        );
+        res.json(arquivos);
+    } catch (error) {
+        console.error('Erro ao listar arquivos em pastas:', error);
+        res.status(500).json({ error: 'Erro ao buscar arquivos em pastas' });
+    }
+});
+
+app.get('/api/arquivos/:usuario_id', authMiddleware, async (req, res) => {
     try {
         const [arquivos] = await pool.query(
             'SELECT * FROM arquivos WHERE usuario_id = ? ORDER BY data_upload DESC',
@@ -375,7 +376,7 @@ app.get('/api/arquivos/:usuario_id', async (req, res) => {
     }
 });
 
-app.delete('/api/arquivos/:id', async (req, res) => {
+app.delete('/api/arquivos/:id', authMiddleware, async (req, res) => {
     try {
         const [arquivos] = await pool.query('SELECT * FROM arquivos WHERE id = ?', [req.params.id]);
         
@@ -399,7 +400,7 @@ app.delete('/api/arquivos/:id', async (req, res) => {
     }
 });
 
-app.put('/api/arquivos/:id', async (req, res) => {
+app.put('/api/arquivos/:id', authMiddleware, async (req, res) => {
     try {
         const { nome_original } = req.body;
         const { id } = req.params;
@@ -420,7 +421,7 @@ app.put('/api/arquivos/:id', async (req, res) => {
     }
 });
 
-app.post('/api/arquivos/:id/comentario', async (req, res) => {
+app.post('/api/arquivos/:id/comentario', authMiddleware, async (req, res) => {
     try {
         const { comentario } = req.body;
         const { id } = req.params;
@@ -437,7 +438,7 @@ app.post('/api/arquivos/:id/comentario', async (req, res) => {
     }
 });
 
-app.get('/api/arquivos/:id/comentario', async (req, res) => {
+app.get('/api/arquivos/:id/comentario', authMiddleware, async (req, res) => {
     try {
         const [arquivos] = await pool.query(
             'SELECT comentario FROM arquivos WHERE id = ?',
@@ -455,7 +456,7 @@ app.get('/api/arquivos/:id/comentario', async (req, res) => {
     }
 });
 
-app.get('/api/pastas/:id/download', async (req, res) => {
+app.get('/api/pastas/:id/download', authMiddleware, async (req, res) => {
     const pastaId = req.params.id;
     const usuarioId = req.query.usuario_id;
     
@@ -528,7 +529,6 @@ app.get('/api/pastas/:id/download', async (req, res) => {
                 'SELECT * FROM pastas WHERE pasta_pai_id = ?', 
                 [pastaIdAtual]
             );
-            
             for (const subPasta of subPastas) {
                 const novoCaminho = path.join(caminhoAtual, subPasta.nome);
                 archive.append('', { name: novoCaminho + '/' });
@@ -554,7 +554,6 @@ app.get('/api/pastas/:id/download', async (req, res) => {
             fileStream.on('end', () => {
                 fs.unlink(tempZipPath, (err) => {
                     if (err) console.error('Erro ao remover temp:', err);
-                    else console.log('Arquivo temporário removido');
                 });
             });
             
@@ -574,7 +573,7 @@ app.get('/api/pastas/:id/download', async (req, res) => {
     }
 });
 
-app.post('/api/pastas', async (req, res) => {
+app.post('/api/pastas', authMiddleware, async (req, res) => {
     try {
         const { usuario_id, nome, pasta_pai_id } = req.body;
         
@@ -597,7 +596,7 @@ app.post('/api/pastas', async (req, res) => {
     }
 });
 
-app.get('/api/pasta/:pasta_id/info', async (req, res) => {
+app.get('/api/pasta/:pasta_id/info', authMiddleware, async (req, res) => {
     try {
         const pasta_id = req.params.pasta_id;
         const usuario_id = req.query.usuario_id;
@@ -642,7 +641,7 @@ app.get('/api/pasta/:pasta_id/info', async (req, res) => {
     }
 });
 
-app.get('/api/pastas/:usuario_id', async (req, res) => {
+app.get('/api/pastas/:usuario_id', authMiddleware, async (req, res) => {
     try {
         const [pastas] = await pool.query(
             'SELECT * FROM pastas WHERE usuario_id = ? ORDER BY nome',
@@ -655,90 +654,108 @@ app.get('/api/pastas/:usuario_id', async (req, res) => {
     }
 });
 
-app.get('/api/pasta/:pasta_id/conteudo', async (req, res) => {
+app.get('/api/pasta/:pasta_id/conteudo', authMiddleware, async (req, res) => {
     try {
         const pasta_id = req.params.pasta_id;
         const usuario_id = req.query.usuario_id;
-        
-        console.log('Buscando conteúdo da pasta:', { pasta_id, usuario_id });
 
         const [pastaPropria] = await pool.query(
-            'SELECT * FROM pastas WHERE id = ? AND usuario_id = ?', 
+            'SELECT * FROM pastas WHERE id = ? AND usuario_id = ?',
             [pasta_id, usuario_id]
         );
-        
-        if (pastaPropria.length > 0) {
-            console.log('Acesso à pasta própria');
-            const [pastas] = await pool.query(
-                'SELECT * FROM pastas WHERE pasta_pai_id = ? ORDER BY nome', 
-                [pasta_id]
-            );
-            const [arquivos] = await pool.query(
-                'SELECT * FROM arquivos WHERE pasta_id = ? ORDER BY data_upload DESC', 
-                [pasta_id]
-            );
-            return res.json({ pastas, arquivos });
-        }
 
-        const [compartilhado] = await pool.query(
-            'SELECT * FROM compartilhamentos WHERE pasta_id = ? AND usuario_compartilhado_id = ?',
-            [pasta_id, usuario_id]
-        );
-        
-        if (compartilhado.length > 0) {
-            console.log('Acesso à pasta via compartilhamento direto');
-            const [pastas] = await pool.query(
-                'SELECT * FROM pastas WHERE pasta_pai_id = ? ORDER BY nome', 
-                [pasta_id]
-            );
-            const [arquivos] = await pool.query(
-                'SELECT * FROM arquivos WHERE pasta_id = ? ORDER BY data_upload DESC', 
-                [pasta_id]
-            );
-            return res.json({ pastas, arquivos });
-        }
+        let autorizado = pastaPropria.length > 0;
 
-        const [pasta] = await pool.query(
-            'SELECT pasta_pai_id FROM pastas WHERE id = ?',
-            [pasta_id]
-        );
-        
-        if (pasta.length > 0 && pasta[0].pasta_pai_id) {
-            const pastaPaiId = pasta[0].pasta_pai_id;
-            
-            const [compartilhadoPai] = await pool.query(
+        if (!autorizado) {
+            const [compartilhado] = await pool.query(
                 'SELECT * FROM compartilhamentos WHERE pasta_id = ? AND usuario_compartilhado_id = ?',
-                [pastaPaiId, usuario_id]
+                [pasta_id, usuario_id]
             );
-            
-            if (compartilhadoPai.length > 0) {
-                console.log('Acesso à subpasta via compartilhamento da pasta pai');
-                const [pastas] = await pool.query(
-                    'SELECT * FROM pastas WHERE pasta_pai_id = ? ORDER BY nome', 
+
+            if (compartilhado.length > 0) {
+                autorizado = true;
+            } else {
+                const [pasta] = await pool.query(
+                    'SELECT pasta_pai_id FROM pastas WHERE id = ?',
                     [pasta_id]
                 );
-                const [arquivos] = await pool.query(
-                    'SELECT * FROM arquivos WHERE pasta_id = ? ORDER BY data_upload DESC', 
-                    [pasta_id]
-                );
-                return res.json({ pastas, arquivos });
+
+                if (pasta.length > 0 && pasta[0].pasta_pai_id) {
+                    const [compartilhadoPai] = await pool.query(
+                        'SELECT * FROM compartilhamentos WHERE pasta_id = ? AND usuario_compartilhado_id = ?',
+                        [pasta[0].pasta_pai_id, usuario_id]
+                    );
+                    if (compartilhadoPai.length > 0) autorizado = true;
+                }
             }
         }
 
-        console.log('Acesso negado à pasta');
-        return res.status(403).json({ error: 'Acesso negado' });
-        
+        if (!autorizado) {
+            return res.status(403).json({ error: 'Acesso negado' });
+        }
+
+        const [subpastasDiretas] = await pool.query(
+            'SELECT * FROM pastas WHERE pasta_pai_id = ? ORDER BY nome',
+            [pasta_id]
+        );
+
+        const [arquivosDiretos] = await pool.query(
+            'SELECT * FROM arquivos WHERE pasta_id = ? ORDER BY data_upload DESC',
+            [pasta_id]
+        );
+
+        const todasSubpastas = [...subpastasDiretas];
+        const fila = subpastasDiretas.map(p => p.id);
+        const visitados = new Set([Number(pasta_id)]);
+
+        while (fila.length > 0) {
+            const atual = fila.shift();
+            if (visitados.has(atual)) continue;
+            visitados.add(atual);
+
+            const [filhas] = await pool.query(
+                'SELECT * FROM pastas WHERE pasta_pai_id = ?',
+                [atual]
+            );
+
+            for (const filha of filhas) {
+                todasSubpastas.push(filha);
+                fila.push(filha.id);
+            }
+        }
+
+        const todosArquivos = [...arquivosDiretos];
+        const idsPastas = visitados;
+
+        if (idsPastas.size > 0) {
+            const ids = [...idsPastas];
+            const placeholders = ids.map(() => '?').join(',');
+            const [arquivosDescendentes] = await pool.query(
+                `SELECT * FROM arquivos WHERE pasta_id IN (${placeholders}) ORDER BY data_upload DESC`,
+                ids
+            );
+
+            const idsUnicos = new Set(arquivosDiretos.map(a => a.id));
+            for (const arq of arquivosDescendentes) {
+                if (!idsUnicos.has(arq.id)) {
+                    todosArquivos.push(arq);
+                    idsUnicos.add(arq.id);
+                }
+            }
+        }
+
+        res.json({ pastas: todasSubpastas, arquivos: todosArquivos });
     } catch (error) {
         console.error('Erro ao buscar conteúdo:', error);
         res.status(500).json({ error: 'Erro ao buscar conteúdo' });
     }
 });
 
-app.put('/api/arquivos/:id/mover', async (req, res) => {
+
+app.put('/api/arquivos/:id/mover', authMiddleware, async (req, res) => {
     try {
         const { pasta_id } = req.body;
         const { id } = req.params;
-        
         await pool.query('UPDATE arquivos SET pasta_id = ? WHERE id = ?', [pasta_id || null, id]);
         
         res.json({ message: 'Arquivo movido com sucesso' });
@@ -748,7 +765,7 @@ app.put('/api/arquivos/:id/mover', async (req, res) => {
     }
 });
 
-app.put('/api/pastas/:id', async (req, res) => {
+app.put('/api/pastas/:id', authMiddleware, async (req, res) => {
     try {
         const { nome } = req.body;
         const { id } = req.params;
@@ -762,19 +779,56 @@ app.put('/api/pastas/:id', async (req, res) => {
     }
 });
 
-app.delete('/api/pastas/:id', async (req, res) => {
+app.delete('/api/pastas/:id', authMiddleware, async (req, res) => {
     try {
-        await pool.query('UPDATE arquivos SET pasta_id = NULL WHERE pasta_id = ?', [req.params.id]);
-        await pool.query('DELETE FROM pastas WHERE id = ?', [req.params.id]);
-        
-        res.json({ message: 'Pasta deletada com sucesso' });
+        const pastaRaizId = Number(req.params.id);
+
+        const [raiz] = await pool.query('SELECT * FROM pastas WHERE id = ?', [pastaRaizId]);
+        if (raiz.length === 0) {
+            return res.status(404).json({ error: 'Pasta não encontrada' });
+        }
+
+        const idsPastas = [pastaRaizId];
+        const fila = [pastaRaizId];
+
+        while (fila.length > 0) {
+            const atual = fila.shift();
+            const [filhas] = await pool.query('SELECT id FROM pastas WHERE pasta_pai_id = ?', [atual]);
+            for (const f of filhas) {
+                idsPastas.push(f.id);
+                fila.push(f.id);
+            }
+        }
+
+        const placeholders = idsPastas.map(() => '?').join(',');
+        const [arquivos] = await pool.query(`SELECT nome_arquivo FROM arquivos WHERE pasta_id IN (${placeholders})`, idsPastas);
+
+        for (const arq of arquivos) {
+            const caminho = path.join(__dirname, 'uploads', arq.nome_arquivo);
+            if (fs.existsSync(caminho)) {
+                try {
+                    fs.unlinkSync(caminho);
+                } catch (e) {
+                    console.error('Erro ao deletar arquivo físico:', arq.nome_arquivo, e.message);
+                }
+            }
+        }
+
+        await pool.query(`DELETE FROM arquivos WHERE pasta_id IN (${placeholders})`, idsPastas);
+        await pool.query(`DELETE FROM pastas WHERE id IN (${placeholders})`, idsPastas);
+
+        res.json({
+            message: 'Pasta deletada com sucesso',
+            arquivosRemovidos: arquivos.length,
+            pastasRemovidas: idsPastas.length
+        });
     } catch (error) {
         console.error('Erro ao deletar pasta:', error);
         res.status(500).json({ error: 'Erro ao deletar pasta' });
     }
 });
 
-app.put('/api/pastas/:id/favoritar', async (req, res) => {
+app.put('/api/pastas/:id/favoritar', authMiddleware, async (req, res) => {
     try {
         const { favorito } = req.body;
         await pool.query('UPDATE pastas SET favorito = ? WHERE id = ?', [favorito, req.params.id]);
@@ -785,7 +839,7 @@ app.put('/api/pastas/:id/favoritar', async (req, res) => {
     }
 });
 
-app.put('/api/arquivos/:id/favoritar', async (req, res) => {
+app.put('/api/arquivos/:id/favoritar', authMiddleware, async (req, res) => {
     try {
         const { favorito } = req.body;
         await pool.query('UPDATE arquivos SET favorito = ? WHERE id = ?', [favorito, req.params.id]);
@@ -796,7 +850,7 @@ app.put('/api/arquivos/:id/favoritar', async (req, res) => {
     }
 });
 
-app.post('/api/compartilhar', async (req, res) => {
+app.post('/api/compartilhar', authMiddleware, async (req, res) => {
     try {
         console.log('Body recebido:', req.body);
         
@@ -811,7 +865,6 @@ app.post('/api/compartilhar', async (req, res) => {
         if (isNaN(pastaId)) {
             return res.status(400).json({ error: 'ID da pasta inválido' });
         }
-        
         const [usuarios] = await pool.query('SELECT id FROM usuarios WHERE email = ?', [email_compartilhado]);
         
         if (usuarios.length === 0) {
@@ -844,7 +897,7 @@ app.post('/api/compartilhar', async (req, res) => {
     }
 });
 
-app.get('/api/compartilhados-por-mim/:usuario_id', async (req, res) => {
+app.get('/api/compartilhados-por-mim/:usuario_id', authMiddleware, async (req, res) => {
     try {
         const [compartilhamentos] = await pool.query(`
             SELECT 
@@ -868,7 +921,7 @@ app.get('/api/compartilhados-por-mim/:usuario_id', async (req, res) => {
     }
 });
 
-app.put('/api/compartilhamentos/:pasta_id/:usuario_id', async (req, res) => {
+app.put('/api/compartilhamentos/:pasta_id/:usuario_id', authMiddleware, async (req, res) => {
     try {
         const { pasta_id, usuario_id } = req.params;
         const { permissao } = req.body;
@@ -886,12 +939,11 @@ app.put('/api/compartilhamentos/:pasta_id/:usuario_id', async (req, res) => {
         
         res.json({ message: 'Permissão atualizada com sucesso' });
     } catch (error) {
-        console.error('Erro ao atualizar compartilhamento:', error);
         res.status(500).json({ error: 'Erro ao atualizar compartilhamento' });
     }
 });
 
-app.delete('/api/compartilhamentos/:id', async (req, res) => {
+app.delete('/api/compartilhamentos/id/:id', authMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
         
@@ -911,7 +963,7 @@ app.delete('/api/compartilhamentos/:id', async (req, res) => {
     }
 });
 
-app.get('/api/compartilhados/:us_id', async (req, res) => {
+app.get('/api/compartilhados/:us_id', authMiddleware, async (req, res) => {
     try {
         const [pastas] = await pool.query(`
             SELECT 
@@ -932,7 +984,7 @@ app.get('/api/compartilhados/:us_id', async (req, res) => {
     }
 });
 
-app.delete('/api/compartilhamentos/:pasta_id', async (req, res) => {
+app.delete('/api/compartilhamentos/:pasta_id', authMiddleware, async (req, res) => {
     try {
         const { pasta_id } = req.params;
         const { usuario_id } = req.query;
@@ -950,12 +1002,11 @@ app.delete('/api/compartilhamentos/:pasta_id', async (req, res) => {
         
         res.json({ message: 'Pasta removida da sua lista com sucesso' });
     } catch (error) {
-        console.error('Erro ao remover compartilhamento:', error);
         res.status(500).json({ error: 'Erro ao remover compartilhamento' });
     }
 });
 
-app.put('/api/usuarios/:id', async (req, res) => {
+app.put('/api/usuarios/:id', authMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
         const { nome, email, senha } = req.body;
@@ -981,7 +1032,7 @@ app.put('/api/usuarios/:id', async (req, res) => {
     }
 });
 
-app.get('/api/admin/usuarios', async (req, res) => {
+app.get('/api/admin/usuarios', authMiddleware, adminMiddleware, async (req, res) => {
     try {
         const [usuarios] = await pool.query('SELECT id, nome, email, tipo, status, inativacao_justificativa, data_criacao FROM usuarios');
         res.json(usuarios);
@@ -990,7 +1041,7 @@ app.get('/api/admin/usuarios', async (req, res) => {
     }
 });
 
-app.get('/api/admin/arquivos', async (req, res) => {
+app.get('/api/admin/arquivos', authMiddleware, adminMiddleware, async (req, res) => {
     try {
         const [arquivos] = await pool.query('SELECT * FROM arquivos');
         res.json(arquivos);
@@ -999,7 +1050,7 @@ app.get('/api/admin/arquivos', async (req, res) => {
     }
 });
 
-app.get('/api/admin/pastas', async (req, res) => {
+app.get('/api/admin/pastas', authMiddleware, adminMiddleware, async (req, res) => {
     try {
         const [pastas] = await pool.query('SELECT * FROM pastas');
         res.json(pastas);
@@ -1008,7 +1059,7 @@ app.get('/api/admin/pastas', async (req, res) => {
     }
 });
 
-app.put('/api/admin/usuarios/:id/tornar-admin', async (req, res) => {
+app.put('/api/admin/usuarios/:id/tornar-admin', authMiddleware, adminMiddleware, async (req, res) => {
     try {
         await pool.query('UPDATE usuarios SET tipo = "admin" WHERE id = ?', [req.params.id]);
         res.json({ message: 'Usuário promovido a admin' });
@@ -1017,7 +1068,7 @@ app.put('/api/admin/usuarios/:id/tornar-admin', async (req, res) => {
     }
 });
 
-app.delete('/api/admin/usuarios/:id', async (req, res) => {
+app.delete('/api/admin/usuarios/:id', authMiddleware, adminMiddleware, async (req, res) => {
     try {
         await pool.query('DELETE FROM usuarios WHERE id = ? AND tipo != "admin"', [req.params.id]);
         res.json({ message: 'Usuário deletado com sucesso' });

@@ -1,0 +1,57 @@
+﻿.perfil-visualizacao {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.4rem;
+}
+
+.perfil-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: var(--bg-hover);
+  color: var(--accent-base);
+  font-size: 2.4rem;
+  margin-bottom: 0.6rem;
+}
+
+.perfil-nome {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-soft);
+  font-family: var(--font-sans);
+}
+
+.perfil-email {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  word-break: break-all;
+}
+
+.perfil-badges {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 0.75rem;
+}
+
+.perfil-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.perfil-badge-tipo {
+  background: rgba(184, 139, 74, 0.15);
+  color: var(--accent-base);
+}

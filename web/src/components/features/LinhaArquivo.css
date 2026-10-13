@@ -1,0 +1,214 @@
+﻿.linha-arquivo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-base);
+  border-radius: var(--radius-lg);
+  transition: all var(--transition-base);
+}
+
+.linha-arquivo:hover {
+  border-color: var(--accent-base);
+  transform: translateX(2px);
+}
+
+.linha-arquivo-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  background: var(--bg-body);
+  overflow: hidden;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: transform var(--transition-base);
+}
+
+.linha-arquivo-preview:hover {
+  transform: scale(1.05);
+}
+
+.linha-arquivo-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.linha-arquivo-icone {
+  display: inline-flex;
+  font-size: 1.5rem;
+}
+
+.linha-arquivo-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.linha-arquivo-nome-linha {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.linha-arquivo-nome {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--font-sans);
+  min-width: 0;
+}
+
+.linha-arquivo-renomear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  opacity: 0.5;
+  flex-shrink: 0;
+  transition: all var(--transition-base);
+}
+
+.linha-arquivo:hover .linha-arquivo-renomear {
+  opacity: 0.9;
+}
+
+.linha-arquivo-renomear:hover {
+  opacity: 1 !important;
+  background: var(--bg-hover);
+  color: var(--accent-base);
+  transform: scale(1.15);
+}
+
+.linha-arquivo-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  flex-wrap: wrap;
+}
+
+.linha-arquivo-tipo {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.linha-arquivo-pasta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 0.1rem 0.35rem;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 500;
+  transition: all var(--transition-base);
+  max-width: 140px;
+}
+
+.linha-arquivo-pasta:not(:disabled):hover {
+  background: var(--bg-hover);
+  color: var(--accent-base);
+}
+
+.linha-arquivo-pasta:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.linha-arquivo-pasta svg {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+}
+
+.linha-arquivo-acoes {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  flex-shrink: 0;
+}
+
+.linha-arquivo-acao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  transition: all var(--transition-base);
+}
+
+.linha-arquivo-acao:hover {
+  background: var(--bg-hover);
+  color: var(--text-soft);
+  transform: scale(1.1);
+}
+
+.linha-arquivo-acao-perigo:hover {
+  background: #c44536;
+  color: #ffffff;
+}
+
+.linha-arquivo-acao-favorito {
+  color: #fbbf24;
+}
+
+@media (max-width: 600px) {
+  .linha-arquivo-meta > span:nth-child(3),
+  .linha-arquivo-meta > span:nth-child(4),
+  .linha-arquivo-meta > span:nth-child(5) {
+    display: none;
+  }
+
+  .linha-arquivo {
+    gap: 0.75rem;
+    padding: 0.65rem 0.8rem;
+  }
+}
+
+.linha-arquivo-acao-comentario {
+  color: #6b8c9e !important;
+}
+
+.linha-arquivo-acao-comentario:hover {
+  background: #6b8c9e !important;
+  color: #ffffff !important;
+}
+
+.linha-arquivo-acao-comentario-ativo {
+  color: #6b8c9e !important;
+}
+
+.linha-arquivo-acao-comentario-ativo:hover {
+  background: #6b8c9e !important;
+  color: #ffffff !important;
+}
