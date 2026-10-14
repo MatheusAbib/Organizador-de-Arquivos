@@ -194,11 +194,6 @@
   transition: all var(--transition-base);
 }
 
-.card-arquivo-pasta:not(:disabled):hover {
-  background: var(--bg-hover);
-  color: var(--accent-base);
-}
-
 .card-arquivo-pasta:disabled {
   cursor: default;
   opacity: 0.7;

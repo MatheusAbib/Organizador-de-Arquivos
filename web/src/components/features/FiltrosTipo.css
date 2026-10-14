@@ -51,6 +51,9 @@
 
 .filtros-tipo-btn-ativo:hover {
   transform: none;
+  background: var(--accent-base);
+  border-color: var(--accent-base);
+  color: #ffffff;
 }
 
 .filtros-tipo-icone {
@@ -77,6 +80,10 @@
 }
 
 .filtros-tipo-btn-ativo .filtros-tipo-contagem {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.filtros-tipo-btn-ativo:hover .filtros-tipo-contagem {
   background: rgba(255, 255, 255, 0.25);
 }
 

@@ -15,7 +15,7 @@
   margin-right: auto;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 1000px) {
   .app-layout-content {
     margin-top: 72px;
     padding: 2rem;

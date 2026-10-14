@@ -11,7 +11,7 @@
 
 .linha-arquivo:hover {
   border-color: var(--accent-base);
-  transform: translateX(2px);
+  transform: translateX(1px);
 }
 
 .linha-arquivo-preview {
@@ -170,7 +170,6 @@
 .linha-arquivo-acao:hover {
   background: var(--bg-hover);
   color: var(--text-soft);
-  transform: scale(1.1);
 }
 
 .linha-arquivo-acao-perigo:hover {

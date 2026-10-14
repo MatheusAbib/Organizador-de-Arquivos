@@ -132,16 +132,12 @@
   }
 
   .barra-acoes-botoes > * {
-    flex: 0 0 auto;
+    display: none;
   }
 }
 
 @media (max-width: 480px) {
-  .barra-acoes-visualizacao-btn span {
-    display: none;
-  }
-
-  .barra-acoes-btn-pasta span {
-    display: none;
-  }
+.barra-acoes-busca-input{
+      font-size: 0.8rem;
+}
 }
