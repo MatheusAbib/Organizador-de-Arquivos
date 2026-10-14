@@ -1,9 +1,10 @@
 ﻿import { useEffect, useRef, useState } from 'react'
-import { FiDownload, FiExternalLink, FiX } from 'react-icons/fi'
+import { FiDownload, FiExternalLink, FiFileText, FiX } from 'react-icons/fi'
 import { createPortal } from 'react-dom'
 import { init } from 'pptx-preview'
 import type { Arquivo } from '@/types/arquivo'
 import { obterUrlArquivo } from '@/utils/formatadores'
+import { ErroVisualizador } from '@/components/ui/ErroVisualizador'
 import './VisualizadorPowerPoint.css'
 
 interface VisualizadorPowerPointProps {
@@ -12,14 +13,16 @@ interface VisualizadorPowerPointProps {
   onBaixar: (arquivo: Arquivo) => void
 }
 
+type Estado = 'carregando' | 'ok' | 'erro'
+
 export function VisualizadorPowerPoint({
   arquivo,
   onClose,
   onBaixar
 }: VisualizadorPowerPointProps) {
   const containerRef = useRef<HTMLDivElement>(null)
-  const [carregando, setCarregando] = useState(false)
-  const [erro, setErro] = useState<string | null>(null)
+  const [estado, setEstado] = useState<Estado>('carregando')
+  const [mensagemErro, setMensagemErro] = useState('')
 
   useEffect(() => {
     if (!arquivo) return
@@ -41,17 +44,34 @@ export function VisualizadorPowerPoint({
     if (!arquivo || !containerRef.current) return
 
     let cancelado = false
+    setEstado('carregando')
+    setMensagemErro('')
+
+    if (containerRef.current) containerRef.current.innerHTML = ''
 
     async function carregar() {
-      setCarregando(true)
-      setErro(null)
-
-      if (containerRef.current) containerRef.current.innerHTML = ''
-
       try {
         const url = obterUrlArquivo(arquivo!.nome_arquivo)
         const response = await fetch(url)
-        if (!response.ok) throw new Error('Erro ao carregar arquivo')
+
+        if (cancelado) return
+
+        if (!response.ok) {
+          setEstado('erro')
+          setMensagemErro(
+            response.status === 404
+              ? 'Arquivo não encontrado no servidor'
+              : 'Erro ao carregar o arquivo'
+          )
+          return
+        }
+
+        const contentType = response.headers.get('content-type') || ''
+        if (contentType.includes('text/html') || contentType.includes('application/json')) {
+          setEstado('erro')
+          setMensagemErro('O arquivo não é uma apresentação válida')
+          return
+        }
 
         const arrayBuffer = await response.arrayBuffer()
 
@@ -65,13 +85,14 @@ export function VisualizadorPowerPoint({
         })
 
         await previewer.preview(arrayBuffer)
+
+        if (!cancelado) setEstado('ok')
       } catch (err) {
         if (!cancelado) {
           console.error('Erro ao renderizar PPTX:', err)
-          setErro('Não foi possível renderizar a apresentação')
+          setEstado('erro')
+          setMensagemErro('Não foi possível renderizar a apresentação')
         }
-      } finally {
-        if (!cancelado) setCarregando(false)
       }
     }
 
@@ -97,14 +118,16 @@ export function VisualizadorPowerPoint({
         <header className="visualizador-ppt-topo">
           <h2 className="visualizador-ppt-titulo">{arquivo.nome_original}</h2>
           <div className="visualizador-ppt-acoes">
-            <button
-              type="button"
-              className="visualizador-ppt-btn"
-              onClick={abrirOfficeOnline}
-              title="Abrir no Office Online"
-            >
-              <FiExternalLink />
-            </button>
+            {estado === 'ok' && (
+              <button
+                type="button"
+                className="visualizador-ppt-btn"
+                onClick={abrirOfficeOnline}
+                title="Abrir no Office Online"
+              >
+                <FiExternalLink />
+              </button>
+            )}
             <button
               type="button"
               className="visualizador-ppt-btn"
@@ -125,40 +148,26 @@ export function VisualizadorPowerPoint({
         </header>
 
         <div className="visualizador-ppt-conteudo">
-          {carregando && (
+          {estado === 'carregando' && (
             <div className="visualizador-ppt-estado">
               <div className="visualizador-ppt-spinner" />
               <p>Renderizando apresentação...</p>
             </div>
           )}
 
-          {erro && !carregando && (
-            <div className="visualizador-ppt-estado visualizador-ppt-estado-erro">
-              <p>{erro}</p>
-              <p>Você pode abrir no Office Online ou baixar o arquivo.</p>
-              <div className="visualizador-ppt-erro-botoes">
-                <button
-                  type="button"
-                  className="visualizador-ppt-btn-texto"
-                  onClick={abrirOfficeOnline}
-                >
-                  <FiExternalLink /> Abrir no Office Online
-                </button>
-                <button
-                  type="button"
-                  className="visualizador-ppt-btn-texto"
-                  onClick={() => onBaixar(arquivo)}
-                >
-                  <FiDownload /> Baixar
-                </button>
-              </div>
-            </div>
+          {estado === 'erro' && (
+            <ErroVisualizador
+              icone={<FiFileText />}
+              titulo="Não foi possível abrir a apresentação"
+              descricao={mensagemErro}
+              onBaixar={() => onBaixar(arquivo)}
+            />
           )}
 
           <div
             ref={containerRef}
             className="visualizador-ppt-render"
-            style={{ display: carregando || erro ? 'none' : 'block' }}
+            style={{ display: estado !== 'ok' ? 'none' : 'block' }}
           />
         </div>
       </div>

@@ -1,9 +1,10 @@
 ﻿import { useEffect, useState } from 'react'
-import { FiDownload, FiX } from 'react-icons/fi'
+import { FiDownload, FiFileText, FiX } from 'react-icons/fi'
 import { createPortal } from 'react-dom'
 import * as XLSX from 'xlsx'
 import type { Arquivo } from '@/types/arquivo'
 import { obterUrlArquivo } from '@/utils/formatadores'
+import { ErroVisualizador } from '@/components/ui/ErroVisualizador'
 import './VisualizadorExcel.css'
 
 interface VisualizadorExcelProps {
@@ -17,11 +18,13 @@ interface PlanilhaRenderizada {
   html: string
 }
 
+type Estado = 'carregando' | 'ok' | 'erro'
+
 export function VisualizadorExcel({ arquivo, onClose, onBaixar }: VisualizadorExcelProps) {
   const [planilhas, setPlanilhas] = useState<PlanilhaRenderizada[]>([])
   const [planilhaAtiva, setPlanilhaAtiva] = useState(0)
-  const [carregando, setCarregando] = useState(false)
-  const [erro, setErro] = useState<string | null>(null)
+  const [estado, setEstado] = useState<Estado>('carregando')
+  const [mensagemErro, setMensagemErro] = useState('')
 
   useEffect(() => {
     if (!arquivo) return
@@ -43,19 +46,39 @@ export function VisualizadorExcel({ arquivo, onClose, onBaixar }: VisualizadorEx
     if (!arquivo) return
 
     let cancelado = false
+    setEstado('carregando')
+    setMensagemErro('')
+    setPlanilhas([])
+    setPlanilhaAtiva(0)
 
     async function carregar() {
-      setCarregando(true)
-      setErro(null)
-      setPlanilhas([])
-      setPlanilhaAtiva(0)
-
       try {
         const url = obterUrlArquivo(arquivo!.nome_arquivo)
         const response = await fetch(url)
-        if (!response.ok) throw new Error('Erro ao carregar arquivo')
+
+        if (cancelado) return
+
+        if (!response.ok) {
+          setEstado('erro')
+          setMensagemErro(
+            response.status === 404
+              ? 'Arquivo não encontrado no servidor'
+              : 'Erro ao carregar o arquivo'
+          )
+          return
+        }
+
+        const contentType = response.headers.get('content-type') || ''
+        if (contentType.includes('text/html') || contentType.includes('application/json')) {
+          setEstado('erro')
+          setMensagemErro('O arquivo não é uma planilha válida')
+          return
+        }
 
         const arrayBuffer = await response.arrayBuffer()
+
+        if (cancelado) return
+
         const workbook = XLSX.read(arrayBuffer, { type: 'array' })
 
         const renderizadas: PlanilhaRenderizada[] = workbook.SheetNames.map((nome) => {
@@ -67,14 +90,16 @@ export function VisualizadorExcel({ arquivo, onClose, onBaixar }: VisualizadorEx
           return { nome, html }
         })
 
-        if (!cancelado) setPlanilhas(renderizadas)
+        if (!cancelado) {
+          setPlanilhas(renderizadas)
+          setEstado('ok')
+        }
       } catch (err) {
         if (!cancelado) {
           console.error('Erro ao ler Excel:', err)
-          setErro('Não foi possível renderizar a planilha')
+          setEstado('erro')
+          setMensagemErro('Não foi possível processar a planilha')
         }
-      } finally {
-        if (!cancelado) setCarregando(false)
       }
     }
 
@@ -112,7 +137,7 @@ export function VisualizadorExcel({ arquivo, onClose, onBaixar }: VisualizadorEx
           </div>
         </header>
 
-        {planilhas.length > 1 && (
+        {estado === 'ok' && planilhas.length > 1 && (
           <div className="visualizador-excel-abas" role="tablist">
             {planilhas.map((p, i) => (
               <button
@@ -132,21 +157,32 @@ export function VisualizadorExcel({ arquivo, onClose, onBaixar }: VisualizadorEx
         )}
 
         <div className="visualizador-excel-conteudo">
-          {carregando ? (
-            <div className="visualizador-excel-estado">
+          {estado === 'carregando' && (
+            <div className="visualizador-excel-loading">
               <div className="visualizador-excel-spinner" />
               <p>Lendo planilha...</p>
             </div>
-          ) : erro ? (
-            <div className="visualizador-excel-estado visualizador-excel-estado-erro">
-              <p>{erro}</p>
-              <p>Você pode baixar o arquivo para abri-lo no Excel.</p>
-            </div>
-          ) : planilhas.length === 0 ? (
-            <div className="visualizador-excel-estado">
-              <p>Nenhuma planilha encontrada</p>
-            </div>
-          ) : (
+          )}
+
+          {estado === 'erro' && (
+            <ErroVisualizador
+              icone={<FiFileText />}
+              titulo="Não foi possível abrir a planilha"
+              descricao={mensagemErro}
+              onBaixar={() => onBaixar(arquivo)}
+            />
+          )}
+
+          {estado === 'ok' && planilhas.length === 0 && (
+            <ErroVisualizador
+              icone={<FiFileText />}
+              titulo="Planilha vazia"
+              descricao="Nenhuma aba encontrada neste arquivo"
+              onBaixar={() => onBaixar(arquivo)}
+            />
+          )}
+
+          {estado === 'ok' && planilhas.length > 0 && (
             <div
               className="visualizador-excel-tabela"
               dangerouslySetInnerHTML={{ __html: planilhas[planilhaAtiva].html }}

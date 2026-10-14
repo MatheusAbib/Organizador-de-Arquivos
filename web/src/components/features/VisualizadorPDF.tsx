@@ -1,8 +1,9 @@
-﻿import { useEffect } from 'react'
-import { FiDownload, FiExternalLink, FiX } from 'react-icons/fi'
+﻿import { useEffect, useState } from 'react'
+import { FiDownload, FiExternalLink, FiFileText, FiX } from 'react-icons/fi'
 import { createPortal } from 'react-dom'
 import type { Arquivo } from '@/types/arquivo'
 import { obterUrlArquivo } from '@/utils/formatadores'
+import { ErroVisualizador } from '@/components/ui/ErroVisualizador'
 import './VisualizadorPDF.css'
 
 interface VisualizadorPDFProps {
@@ -11,7 +12,12 @@ interface VisualizadorPDFProps {
   onBaixar: (arquivo: Arquivo) => void
 }
 
+type Estado = 'carregando' | 'ok' | 'erro'
+
 export function VisualizadorPDF({ arquivo, onClose, onBaixar }: VisualizadorPDFProps) {
+  const [estado, setEstado] = useState<Estado>('carregando')
+  const [mensagemErro, setMensagemErro] = useState('')
+
   useEffect(() => {
     if (!arquivo) return
 
@@ -28,6 +34,50 @@ export function VisualizadorPDF({ arquivo, onClose, onBaixar }: VisualizadorPDFP
     }
   }, [arquivo, onClose])
 
+  useEffect(() => {
+    if (!arquivo) return
+
+    let cancelado = false
+    setEstado('carregando')
+    setMensagemErro('')
+
+    const url = obterUrlArquivo(arquivo.nome_arquivo)
+
+    fetch(url, { method: 'HEAD' })
+      .then((response) => {
+        if (cancelado) return
+
+        if (!response.ok) {
+          setEstado('erro')
+          setMensagemErro(
+            response.status === 404
+              ? 'Arquivo não encontrado no servidor'
+              : 'Erro ao carregar o arquivo'
+          )
+          return
+        }
+
+        const contentType = response.headers.get('content-type') || ''
+        if (!contentType.includes('pdf')) {
+          setEstado('erro')
+          setMensagemErro('O arquivo não é um PDF válido')
+          return
+        }
+
+        setEstado('ok')
+      })
+      .catch(() => {
+        if (!cancelado) {
+          setEstado('erro')
+          setMensagemErro('Não foi possível conectar ao servidor')
+        }
+      })
+
+    return () => {
+      cancelado = true
+    }
+  }, [arquivo])
+
   if (!arquivo) return null
 
   const url = obterUrlArquivo(arquivo.nome_arquivo)
@@ -38,15 +88,17 @@ export function VisualizadorPDF({ arquivo, onClose, onBaixar }: VisualizadorPDFP
         <header className="visualizador-pdf-topo">
           <h2 className="visualizador-pdf-titulo">{arquivo.nome_original}</h2>
           <div className="visualizador-pdf-acoes">
-            <a
-              href={url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="visualizador-pdf-btn"
-              title="Abrir em nova aba"
-            >
-              <FiExternalLink />
-            </a>
+            {estado === 'ok' && (
+              <a
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="visualizador-pdf-btn"
+                title="Abrir em nova aba"
+              >
+                <FiExternalLink />
+              </a>
+            )}
             <button
               type="button"
               className="visualizador-pdf-btn"
@@ -67,11 +119,29 @@ export function VisualizadorPDF({ arquivo, onClose, onBaixar }: VisualizadorPDFP
         </header>
 
         <div className="visualizador-pdf-conteudo">
-          <iframe
-            src={url}
-            title={arquivo.nome_original}
-            className="visualizador-pdf-iframe"
-          />
+          {estado === 'carregando' && (
+            <div className="visualizador-pdf-loading">
+              <div className="visualizador-pdf-spinner" />
+              <p>Carregando PDF...</p>
+            </div>
+          )}
+
+          {estado === 'erro' && (
+            <ErroVisualizador
+              icone={<FiFileText />}
+              titulo="Não foi possível abrir o PDF"
+              descricao={mensagemErro || 'O arquivo pode estar corrompido, indisponível ou em um formato inválido.'}
+              onBaixar={() => onBaixar(arquivo)}
+            />
+          )}
+
+          {estado === 'ok' && (
+            <iframe
+              src={url}
+              title={arquivo.nome_original}
+              className="visualizador-pdf-iframe"
+            />
+          )}
         </div>
       </div>
     </div>,

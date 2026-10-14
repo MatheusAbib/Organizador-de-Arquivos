@@ -1,8 +1,9 @@
 ﻿import { useEffect, useState } from 'react'
-import { FiDownload, FiX } from 'react-icons/fi'
+import { FiDownload, FiFileText, FiX } from 'react-icons/fi'
 import { createPortal } from 'react-dom'
 import type { Arquivo } from '@/types/arquivo'
 import { obterUrlArquivo } from '@/utils/formatadores'
+import { ErroVisualizador } from '@/components/ui/ErroVisualizador'
 import './VisualizadorTexto.css'
 
 interface VisualizadorTextoProps {
@@ -11,10 +12,12 @@ interface VisualizadorTextoProps {
   onBaixar: (arquivo: Arquivo) => void
 }
 
+type Estado = 'carregando' | 'ok' | 'erro'
+
 export function VisualizadorTexto({ arquivo, onClose, onBaixar }: VisualizadorTextoProps) {
   const [conteudo, setConteudo] = useState<string>('')
-  const [carregando, setCarregando] = useState(false)
-  const [erro, setErro] = useState<string | null>(null)
+  const [estado, setEstado] = useState<Estado>('carregando')
+  const [mensagemErro, setMensagemErro] = useState('')
 
   useEffect(() => {
     if (!arquivo) return
@@ -36,22 +39,37 @@ export function VisualizadorTexto({ arquivo, onClose, onBaixar }: VisualizadorTe
     if (!arquivo) return
 
     let cancelado = false
+    setEstado('carregando')
+    setMensagemErro('')
+    setConteudo('')
 
     async function carregar() {
-      setCarregando(true)
-      setErro(null)
-      setConteudo('')
-
       try {
         const response = await fetch(obterUrlArquivo(arquivo!.nome_arquivo))
-        if (!response.ok) throw new Error('Erro ao carregar arquivo')
+
+        if (cancelado) return
+
+        if (!response.ok) {
+          setEstado('erro')
+          setMensagemErro(
+            response.status === 404
+              ? 'Arquivo não encontrado no servidor'
+              : 'Erro ao carregar o arquivo'
+          )
+          return
+        }
 
         const texto = await response.text()
-        if (!cancelado) setConteudo(texto)
+
+        if (!cancelado) {
+          setConteudo(texto)
+          setEstado('ok')
+        }
       } catch {
-        if (!cancelado) setErro('Não foi possível carregar o arquivo')
-      } finally {
-        if (!cancelado) setCarregando(false)
+        if (!cancelado) {
+          setEstado('erro')
+          setMensagemErro('Não foi possível carregar o arquivo')
+        }
       }
     }
 
@@ -90,13 +108,23 @@ export function VisualizadorTexto({ arquivo, onClose, onBaixar }: VisualizadorTe
         </header>
 
         <div className="visualizador-texto-conteudo">
-          {carregando ? (
-            <p className="visualizador-texto-estado">Carregando...</p>
-          ) : erro ? (
-            <p className="visualizador-texto-estado visualizador-texto-estado-erro">{erro}</p>
-          ) : (
-            <pre className="visualizador-texto-pre">{conteudo}</pre>
+          {estado === 'carregando' && (
+            <div className="visualizador-texto-loading">
+              <div className="visualizador-texto-spinner" />
+              <p>Carregando arquivo...</p>
+            </div>
           )}
+
+          {estado === 'erro' && (
+            <ErroVisualizador
+              icone={<FiFileText />}
+              titulo="Não foi possível abrir o arquivo"
+              descricao={mensagemErro}
+              onBaixar={() => onBaixar(arquivo)}
+            />
+          )}
+
+          {estado === 'ok' && <pre className="visualizador-texto-pre">{conteudo}</pre>}
         </div>
       </div>
     </div>,

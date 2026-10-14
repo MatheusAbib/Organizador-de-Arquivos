@@ -67,7 +67,7 @@
 .grid-arquivos {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 1rem;
+  gap: 0.5rem;
 }
 
 .lista-arquivos {

@@ -1,9 +1,10 @@
 ﻿import { useEffect, useState } from 'react'
-import { FiDownload, FiPrinter, FiX } from 'react-icons/fi'
+import { FiDownload, FiFileText, FiPrinter, FiX } from 'react-icons/fi'
 import { createPortal } from 'react-dom'
 import mammoth from 'mammoth'
 import type { Arquivo } from '@/types/arquivo'
 import { obterUrlArquivo } from '@/utils/formatadores'
+import { ErroVisualizador } from '@/components/ui/ErroVisualizador'
 import './VisualizadorWord.css'
 
 interface VisualizadorWordProps {
@@ -12,10 +13,12 @@ interface VisualizadorWordProps {
   onBaixar: (arquivo: Arquivo) => void
 }
 
+type Estado = 'carregando' | 'ok' | 'erro'
+
 export function VisualizadorWord({ arquivo, onClose, onBaixar }: VisualizadorWordProps) {
   const [html, setHtml] = useState<string>('')
-  const [carregando, setCarregando] = useState(false)
-  const [erro, setErro] = useState<string | null>(null)
+  const [estado, setEstado] = useState<Estado>('carregando')
+  const [mensagemErro, setMensagemErro] = useState('')
 
   useEffect(() => {
     if (!arquivo) return
@@ -37,18 +40,38 @@ export function VisualizadorWord({ arquivo, onClose, onBaixar }: VisualizadorWor
     if (!arquivo) return
 
     let cancelado = false
+    setEstado('carregando')
+    setMensagemErro('')
+    setHtml('')
 
     async function carregar() {
-      setCarregando(true)
-      setErro(null)
-      setHtml('')
-
       try {
         const url = obterUrlArquivo(arquivo!.nome_arquivo)
         const response = await fetch(url)
-        if (!response.ok) throw new Error('Erro ao carregar arquivo')
+
+        if (cancelado) return
+
+        if (!response.ok) {
+          setEstado('erro')
+          setMensagemErro(
+            response.status === 404
+              ? 'Arquivo não encontrado no servidor'
+              : 'Erro ao carregar o arquivo'
+          )
+          return
+        }
+
+        const contentType = response.headers.get('content-type') || ''
+        if (contentType.includes('text/html') || contentType.includes('application/json')) {
+          setEstado('erro')
+          setMensagemErro('O arquivo não é um documento válido')
+          return
+        }
 
         const arrayBuffer = await response.arrayBuffer()
+
+        if (cancelado) return
+
         const resultado = await mammoth.convertToHtml(
           { arrayBuffer },
           {
@@ -59,14 +82,16 @@ export function VisualizadorWord({ arquivo, onClose, onBaixar }: VisualizadorWor
           }
         )
 
-        if (!cancelado) setHtml(resultado.value)
+        if (!cancelado) {
+          setHtml(resultado.value)
+          setEstado('ok')
+        }
       } catch (err) {
         if (!cancelado) {
           console.error('Erro ao converter Word:', err)
-          setErro('Não foi possível renderizar o documento')
+          setEstado('erro')
+          setMensagemErro('Não foi possível processar o documento')
         }
-      } finally {
-        if (!cancelado) setCarregando(false)
       }
     }
 
@@ -111,15 +136,16 @@ export function VisualizadorWord({ arquivo, onClose, onBaixar }: VisualizadorWor
         <header className="visualizador-word-topo">
           <h2 className="visualizador-word-titulo">{arquivo.nome_original}</h2>
           <div className="visualizador-word-acoes">
-            <button
-              type="button"
-              className="visualizador-word-btn"
-              onClick={imprimir}
-              title="Imprimir"
-              disabled={!html}
-            >
-              <FiPrinter />
-            </button>
+            {estado === 'ok' && (
+              <button
+                type="button"
+                className="visualizador-word-btn"
+                onClick={imprimir}
+                title="Imprimir"
+              >
+                <FiPrinter />
+              </button>
+            )}
             <button
               type="button"
               className="visualizador-word-btn"
@@ -140,17 +166,23 @@ export function VisualizadorWord({ arquivo, onClose, onBaixar }: VisualizadorWor
         </header>
 
         <div className="visualizador-word-conteudo">
-          {carregando ? (
-            <div className="visualizador-word-estado">
+          {estado === 'carregando' && (
+            <div className="visualizador-word-loading">
               <div className="visualizador-word-spinner" />
               <p>Convertendo documento...</p>
             </div>
-          ) : erro ? (
-            <div className="visualizador-word-estado visualizador-word-estado-erro">
-              <p>{erro}</p>
-              <p>Você pode tentar baixar o arquivo para visualizá-lo.</p>
-            </div>
-          ) : (
+          )}
+
+          {estado === 'erro' && (
+            <ErroVisualizador
+              icone={<FiFileText />}
+              titulo="Não foi possível abrir o documento"
+              descricao={mensagemErro}
+              onBaixar={() => onBaixar(arquivo)}
+            />
+          )}
+
+          {estado === 'ok' && (
             <div
               className="visualizador-word-html"
               dangerouslySetInnerHTML={{ __html: html || '<p>Documento vazio</p>' }}
